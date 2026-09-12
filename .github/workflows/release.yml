@@ -1,0 +1,181 @@
+name: Tag checks, build and draft release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate version tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          . ./windows/release-metadata.ps1
+          Get-ReleaseVersion (Get-Content pubspec.yaml -Raw) $env:RELEASE_TAG
+      - name: Install pinned Flutter 3.47.2
+        run: |
+          $sdkPath = Join-Path $env:RUNNER_TEMP 'flutter'
+          git init $sdkPath
+          if ($LASTEXITCODE -ne 0) { throw 'SDK init failed' }
+          git -C $sdkPath remote add origin https://github.com/flutter/flutter.git
+          if ($LASTEXITCODE -ne 0) { throw 'SDK remote failed' }
+          git -C $sdkPath fetch --depth 1 origin refs/tags/3.47.2:refs/tags/3.47.2
+          if ($LASTEXITCODE -ne 0) { throw 'SDK fetch failed' }
+          $revision = git -C $sdkPath rev-parse 'refs/tags/3.47.2^{commit}'
+          if ($LASTEXITCODE -ne 0 -or $revision -cne 'd3b14c876900e553bc736ca19295fc09e3853e8e') { throw 'Flutter tag SHA mismatch' }
+          git -C $sdkPath checkout --detach $revision
+          if ($LASTEXITCODE -ne 0) { throw 'SDK checkout failed' }
+          (Join-Path $sdkPath 'bin') >> $env:GITHUB_PATH
+      - name: Resolve locked dependencies
+        run: |
+          flutter pub get --enforce-lockfile
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency resolution failed' }
+          ./windows/clean-generated.ps1
+      - name: Check generated translations
+        run: |
+          dart run slang
+          if ($LASTEXITCODE -ne 0) { throw 'Translation generation failed' }
+          ./windows/clean-generated.ps1
+          git diff --exit-code -- lib/i18n
+          if ($LASTEXITCODE -ne 0) { throw 'Generated translations are outdated' }
+      - name: Static analysis
+        run: flutter analyze --no-pub
+      - name: Unit tests
+        timeout-minutes: 20
+        run: |
+          ./test/release_metadata_test.ps1
+          ./test/release_download_test.ps1
+          ./test/run-unit-tests.ps1
+      - name: Build Windows x64
+        run: flutter build windows --release --no-pub --no-tree-shake-icons
+      - name: Package EXE and verification archive
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./windows/create-release-bundle.ps1 -Tag $env:RELEASE_TAG
+      - name: Upload the two release files
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-x64-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/release-bundle/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  attest:
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: release-bundle
+          merge-multiple: true
+      - name: Attest executable and original verification archive
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            release-bundle/*.exe
+            release-bundle/verification.zip
+      - name: Include attestation bundle without changing its subjects
+        shell: pwsh
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path attested-release | Out-Null
+          Copy-Item -Path release-bundle/*.exe -Destination attested-release
+          $archive = [IO.Compression.ZipFile]::Open((Join-Path $PWD 'attested-release/verification.zip'), [IO.Compression.ZipArchiveMode]::Create)
+          try {
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $PWD 'release-bundle/verification.zip'), 'build-verification.zip') | Out-Null
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $env:ATTESTATION_BUNDLE, 'attestation.sigstore.json') | Out-Null
+          } finally { $archive.Dispose() }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        id: upload
+        with:
+          name: attested-windows-x64-${{ github.sha }}-${{ github.run_attempt }}
+          path: attested-release/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  draft:
+    needs: attest
+    runs-on: windows-2025
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      attestations: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          artifact-ids: ${{ needs.attest.outputs.artifact-id }}
+          path: release-bundle
+          merge-multiple: true
+      - name: Verify assets and create draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = $env:RELEASE_TAG.Substring(1)
+          $exeName = "SkySecret-$version-windows-x64.exe"
+          $files = @(Get-ChildItem -LiteralPath release-bundle -File)
+          $expected = @($exeName, 'verification.zip')
+          if (@(Compare-Object ($files.Name | Sort-Object) ($expected | Sort-Object)).Count) { throw 'Expected only EXE and verification.zip' }
+          $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PWD 'release-bundle/verification.zip'))
+          New-Item -ItemType Directory -Path verification | Out-Null
+          try {
+            $expectedEntries = @('attestation.sigstore.json', 'build-verification.zip')
+            if (@(Compare-Object ($archive.Entries.FullName | Sort-Object) $expectedEntries).Count) { throw 'Unexpected verification contents' }
+            foreach ($entry in $archive.Entries) {
+              if ($entry.Length -gt 16MB) { throw 'Oversized verification entry' }
+              [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, (Join-Path $PWD "verification/$($entry.FullName)"))
+            }
+          } finally { $archive.Dispose() }
+          foreach ($subject in @("release-bundle/$exeName", 'verification/build-verification.zip')) {
+            gh attestation verify $subject --repo $env:GH_REPO --bundle verification/attestation.sigstore.json --signer-workflow "$env:GH_REPO/.github/workflows/release.yml" --signer-digest $env:SOURCE_COMMIT --source-digest $env:SOURCE_COMMIT --source-ref "refs/tags/$env:RELEASE_TAG" --deny-self-hosted-runners
+            if ($LASTEXITCODE -ne 0) { throw 'Artifact provenance verification failed' }
+          }
+          $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PWD 'verification/build-verification.zip'))
+          try {
+            $entry = @($archive.Entries | Where-Object FullName -ceq 'SHA256SUMS.txt')
+            if ($entry.Count -ne 1 -or $entry[0].Length -gt 1MB) { throw 'Missing, duplicate or oversized checksums' }
+            $reader = [IO.StreamReader]::new($entry[0].Open())
+            try { $checksums = $reader.ReadToEnd() } finally { $reader.Dispose() }
+          } finally { $archive.Dispose() }
+          $hash = (Get-FileHash -LiteralPath "release-bundle/$exeName" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if (($checksums -split '\r?\n') -cnotcontains "$hash  $exeName") { throw 'EXE checksum mismatch' }
+          $notes = "Download **$exeName** to run SkySecret. **verification.zip** contains GitHub attestation and the signed build-information archive with SHA-256 checksums. See [Security](https://github.com/$env:GH_REPO/blob/$env:RELEASE_TAG/SECURITY.md) for verification and format compatibility."
+          $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
+          gh release create $env:RELEASE_TAG --repo $env:GH_REPO --verify-tag --target $env:SOURCE_COMMIT --draft --title "SkySecret $env:RELEASE_TAG" --notes-file release-notes.md @($files.FullName)
+          if ($LASTEXITCODE -ne 0) { throw 'Draft creation failed; existing releases are never overwritten' }

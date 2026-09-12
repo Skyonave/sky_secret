@@ -1,0 +1,15 @@
+{
+  "enigma": {
+    "version": "11.30",
+    "url": "https://enigmaprotector.com/assets/files/enigmavb.exe",
+    "fallbackUrls": ["https://www.enigmaprotector.com/assets/files/enigmavb.exe"],
+    "sha256": "ab743f5e3dd927a288e126bbb053d367f270592e89378c9a06b7f3b15fa1ee35",
+    "executableSha256": "f9be58dea8b070357c4b0b9e5d0caa85fc18842357a5e19f7b2810e22d1ec1b3"
+  },
+  "innoextract": {
+    "version": "1.9",
+    "url": "https://constexpr.org/innoextract/files/innoextract-1.9-windows.zip",
+    "sha256": "6989342c9b026a00a72a38f23b62a8e6a22cc5de69805cf47d68ac2fec993065",
+    "executableSha256": "946bd06d8b3722a791fea4d84f496139eef6faef61640924cb72f5f1998a68e1"
+  }
+}
