@@ -6,6 +6,8 @@ try {
     if ($translations.Count) {
         & dart run windows/clean_dart_comments.dart @translations
         if ($LASTEXITCODE -ne 0) { throw 'Generated Dart cleanup failed' }
+        & dart format @translations
+        if ($LASTEXITCODE -ne 0) { throw 'Generated Dart formatting failed' }
     }
     foreach ($path in @('pubspec.lock', 'windows/flutter/generated_plugin_registrant.cc', 'windows/flutter/generated_plugin_registrant.h', 'windows/flutter/generated_plugins.cmake')) {
         if (-not (Test-Path -LiteralPath $path)) { continue }
