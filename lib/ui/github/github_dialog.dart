@@ -3,11 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../../desktop/browser.dart';
-import '../../github/github_api.dart';
-import '../../github/github_backup.dart';
+import '../../core/os/windows/browser.dart';
+import '../../core/sync/github/github_api.dart';
+import '../../core/sync/github/github_backup.dart';
 import '../../i18n/translations.g.dart';
-import '../shared/sensitive_text_editing.dart';
+import '../shared/input/sensitive_text_editing.dart';
 
 String githubStatusLabel(GitHubBackup backup) => switch (backup.status) {
   BackupStatus.disconnected => t.githubDisconnected,

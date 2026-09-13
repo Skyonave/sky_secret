@@ -1,587 +1,1031 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:slang/generated.dart';
+
 import 'translations.g.dart';
 
 class TranslationsEn extends Translations with BaseTranslations<AppLocale, Translations> {
-	TranslationsEn({Map<String, Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<AppLocale, Translations>? meta})
-		: assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
-		  _meta = meta ?? TranslationMetadata(
-		    locale: AppLocale.en,
-		    overrides: overrides ?? {},
-		    cardinalResolver: cardinalResolver,
-		    ordinalResolver: ordinalResolver,
-		  ),
-		  super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-		_meta.setFlatMapFunction(_flatMapFunction);
-	}
+  TranslationsEn({
+    Map<String, Node>? overrides,
+    PluralResolver? cardinalResolver,
+    PluralResolver? ordinalResolver,
+    TranslationMetadata<AppLocale, Translations>? meta,
+  }) : assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
+       _meta =
+           meta ??
+           TranslationMetadata(
+             locale: AppLocale.en,
+             overrides: overrides ?? {},
+             cardinalResolver: cardinalResolver,
+             ordinalResolver: ordinalResolver,
+           ),
+       super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
+    _meta.setFlatMapFunction(_flatMapFunction);
+  }
 
-	final TranslationMetadata<AppLocale, Translations> _meta;
-	@override TranslationMetadata<AppLocale, Translations> get $meta => _meta;
+  final TranslationMetadata<AppLocale, Translations> _meta;
+  @override
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
-	@override dynamic operator[](String key) => _meta.getTranslation(key) ?? super[key];
+  @override
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
-	late final TranslationsEn _root = this;
+  late final TranslationsEn _root = this;
 
-	@override
-	TranslationsEn $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsEn(meta: meta ?? this.$meta);
+  @override
+  TranslationsEn $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) =>
+      TranslationsEn(meta: meta ?? this.$meta);
 
-	@override String get vaultCreateTextFile => 'Create .txt';
-	@override String get vaultCreateText => 'Create';
-	@override String get vaultTextFileName => 'File name';
-	@override String get vaultTextDefaultName => 'New document';
-	@override String get vaultTextNameInvalid => 'Enter a valid file name. The .txt extension is added automatically.';
-	@override String get vaultTextNameTaken => 'A file with this name already exists here. Choose another name.';
-	@override String get vaultSecretKind => 'Secret';
-	@override String get vaultRoot => 'No section';
-	@override String get vaultContents => 'Contents';
-	@override String get vaultLocation => 'Location';
-	@override String get vaultLocationActions => 'Actions';
-	@override String get vaultNewSubfolder => 'Create folder';
-	@override String get vaultRenameSubfolder => 'Rename folder';
-	@override String get vaultSubfolderName => 'Folder name';
-	@override String get vaultDeleteSubfolder => 'Delete folder';
-	@override String vaultDeleteSubfolderQuestion({required Object name}) => 'Delete folder “${name}”? All its files and secrets will stay in the section.';
-	@override String get vaultRootDropHint => 'Add files and secrets directly here, or create your own section.';
-	@override String get vaultFolderDropHint => 'Drop files or secrets here. You can also add them from the menu.';
-	@override String get vaultMoveToRoot => 'Move to the vault root';
-	@override String get vaultChoose => 'Choose vault';
-	@override String get vaultGeneral => 'General';
-	@override String get vaultPasswordOptions => 'Password settings';
-	@override String vaultPasswordLength({required Object length}) => 'Password · ${length} chars';
-	@override String get vaultGeneratePassword => 'Generate';
-	@override String get vaultNew => 'Create another vault';
-	@override String get vaultPrimary => 'Primary vault';
-	@override String vaultIdentifier({required Object id}) => 'Vault · ${id}';
-	@override String get vaultDelete => 'Delete';
-	@override String get vaultDeleteEntry => 'Delete entry';
-	@override String vaultDeleteEntryQuestion({required Object name}) => 'Delete “${name}”? This cannot be undone.';
-	@override String get vaultEditEntry => 'Edit entry';
-	@override String get vaultFolders => 'Sections';
-	@override String get vaultFolder => 'Section';
-	@override String get vaultFolderName => 'Section name';
-	@override String get vaultNewFolder => 'New section';
-	@override String get vaultRenameFolder => 'Rename section';
-	@override String get vaultDeleteFolder => 'Delete section';
-	@override String vaultDeleteFolderQuestion({required Object name}) => 'Delete section “${name}” and its folders? All files and secrets will stay in the vault root.';
-	@override String get vaultFolderActions => 'Section actions';
-	@override String get vaultAllEntries => 'All';
-	@override String get vaultUnfiled => 'Unfiled';
-	@override String get vaultEmptyFolder => 'No entries in this section yet.';
-	@override String get vaultFolderNameTaken => 'This name is already used here.';
-	@override String get vaultNameRequired => 'Enter a name up to 120 characters.';
-	@override String get vaultRename => 'Rename vault';
-	@override String get vaultName => 'Vault name';
-	@override String get vaultNameOptional => 'Vault name (optional)';
-	@override String vaultDropHere({required Object name}) => 'Drop an entry into “${name}”';
-	@override String get vaultEntryHint => 'Click to copy password · drag to move or reorder';
-	@override String get appName => 'SkySecret';
-	@override String get windowsOnly => 'SkySecret runs on Windows.';
-	@override String get clipboardBusy => 'Clipboard is busy. Please try again.';
-	@override String get hide => 'Hide to tray · Esc';
-	@override String get vault => 'Vault';
-	@override String get generator => 'Generator';
-	@override String get headline => 'Within reach.\nJust for you.';
-	@override String get subtitle => 'One place for passwords, notes and files.';
-	@override String get emptyVault => 'No vault yet';
-	@override String get vaultUnavailable => 'Storage is not available yet.\nThe password generator is ready.';
-	@override String get openGenerator => 'Open generator';
-	@override String get newPassword => 'New password';
-	@override String get generatedLocally => 'Generated on this device and never saved.';
-	@override String get length => 'Length';
-	@override String get symbols => 'Special characters';
-	@override String get copied => 'Copied';
-	@override String get copy => 'Copy';
-	@override String get regenerate => 'Generate another';
-	@override String get clipboardHelp => 'Cleared after 30 seconds.\nNo Windows history or sync.';
-	@override String get githubDisconnected => 'GitHub disconnected';
-	@override String get shortcutTitle => 'Keyboard shortcut';
-	@override String get shortcutHelp => 'Click the field and press your preferred shortcut.';
-	@override String get unsupportedKey => 'This key is not supported.';
-	@override String get resetShortcut => 'Reset to Shift + Space';
-	@override String get cancel => 'Cancel';
-	@override String get saving => 'Saving…';
-	@override String get save => 'Save';
-	@override String get readSettingsFailed => 'Could not read settings. Using Shift + Space.';
-	@override String get trayFailed => 'Could not create the tray icon. Restart the application.';
-	@override String get exit => 'Exit';
-	@override String get retry => 'Please try again.';
-	@override String get unsupportedShortcut => 'This shortcut is not supported.';
-	@override String get shortcutBusy => 'This shortcut is used by Windows or another application.';
-	@override String get saveSettingsFailed => 'Could not save settings. Your previous shortcut is still active.';
-	@override String get trayUpdateFailed => 'Shortcut saved. The tray label will update after a restart.';
-	@override String get shortcutFailed => 'Could not register this shortcut. Try another.';
-	@override String openManager({required Object shortcut}) => 'Open manager    ${shortcut}';
-	@override String shortcutUnavailable({required Object shortcut}) => '${shortcut} is unavailable. Open the manager from the tray.';
-	@override String shortcutTaken({required Object shortcut}) => '${shortcut} is already in use. Open the manager from the tray.';
-	@override String trayTooltip({required Object shortcut}) => 'SkySecret · ${shortcut}';
-	@override String get shortcutPressKey => 'Now press the main key';
-	@override String get shortcutListening => 'Listening for keystrokes…';
-	@override String get shortcutClickToRecord => 'Click to change the shortcut';
-	@override String get vaultLocal => 'Local vault';
-	@override String get vaultLocked => 'Vault locked';
-	@override String get vaultLock => 'Lock vault';
-	@override String get vaultCreateHelp => 'Choose a master password you can remember. It is required to open your data and cannot be reset.';
-	@override String get vaultUnlockHelp => 'Enter your master password to open this device’s vault.';
-	@override String get vaultMasterPassword => 'Master password';
-	@override String get vaultConfirmPassword => 'Repeat master password';
-	@override String get vaultCreate => 'Create vault';
-	@override String get vaultUnlock => 'Unlock';
-	@override String get vaultWorking => 'Opening vault…';
-	@override String get vaultEntryTitle => 'Title';
-	@override String get vaultUsername => 'Username';
-	@override String get vaultEntryPassword => 'Password';
-	@override String get vaultNotes => 'Notes';
-	@override String get vaultAddEntry => 'Add entry';
-	@override String get vaultNoEntries => 'Your vault is ready. Add your first entry.';
-	@override String get vaultLocalOnly => 'Saved encrypted on this device. GitHub backup is not connected yet.';
-	@override String get vaultPasswordRequired => 'Enter a master password.';
-	@override String get vaultMemoryProtectionFailed => 'Windows could not protect memory. The operation stopped; the saved vault is unchanged. Close unused applications and try again.';
-	@override String get windowPrivacyFailed => 'Windows could not enable screen capture protection for this window.';
-	@override String get vaultPasswordRequirements => 'Use at least 16 characters. A long, unique passphrase is welcome; uppercase letters, digits and symbols are optional. Obvious passwords and repeated patterns are rejected.';
-	@override String get vaultPasswordMismatch => 'Passwords do not match.';
-	@override String get vaultUnlockFailed => 'Wrong password or damaged vault.';
-	@override String get vaultFormatFailed => 'The vault is damaged or its format is not supported.';
-	@override String get vaultConflict => 'The vault changed on disk. Lock and reopen it before saving.';
-	@override String get vaultTitleRequired => 'Enter a title.';
-	@override String get vaultLimit => 'The entry or vault exceeds the supported size.';
-	@override String get vaultReadFailed => 'Could not access the vault. Check access to local application data.';
-	@override String get vaultWriteFailed => 'The operation could not be completed. Check disk space and file access.';
-	@override String get vaultPreferencesSaveFailed => 'Could not save settings. The change was not applied.';
-	@override String get vaultSettings => 'Vault settings';
-	@override String get vaultAutoLock => 'Auto-lock';
-	@override String get vaultLockWhenHidden => 'Lock when hidden';
-	@override String get vaultLockWhenHiddenHelp => 'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.';
-	@override String get vaultSnapshotCleanupWarning => 'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.';
-	@override String get vaultPasswordBackupWarning => 'After the new password is saved, local recovery history and cached sync snapshots are deleted. Previous exports and GitHub revisions remain decryptable with the old password. If it was compromised, verify a new independent backup and replace the backup repository; old repositories and downloaded copies are not revoked automatically. Change any exposed account passwords too. New vaults and password changes use format v2; update all devices to SkySecret 0.2.0 or later.';
-	@override String get vaultAutoLockHelp => 'After 2 minutes of inactivity. Windows lock and sleep always lock the vault.';
-	@override String get vaultPreferencesReadFailed => 'Could not read settings. Auto-lock is enabled.';
-	@override String get vaultAttachmentSaved => 'File saved to disk without encryption.';
-	@override String get vaultExport => 'Export vault';
-	@override String get vaultAddAttachment => 'Attach file';
-	@override String get vaultSaveAttachment => 'Save file to disk';
-	@override String get vaultNewPassword => 'New master password';
-	@override String get vaultChangePassword => 'Master password';
-	@override String get vaultInvalidFilename => 'The filename is not supported by Windows. Rename the source file.';
-	@override String get vaultAttachmentHelp => 'Up to 20 MiB per file, 50 MiB total. Apply changes with Save. Extracted files are not encrypted.';
-	@override String get vaultImportHelp => 'Enter the backup password. It will be added as a separate vault, preserving existing data.';
-	@override String get vaultImportDone => 'Vault verified and imported.';
-	@override String get vaultCurrentPassword => 'Current master password';
-	@override String get vaultDestinationExists => 'The file already exists or the vault has changed. Choose a new filename; for a password change, reopen the vault.';
-	@override String get vaultAttachments => 'Files';
-	@override String get vaultPasswordChanged => 'Master password changed. Create a new backup.';
-	@override String get vaultExportDone => 'Encrypted backup saved with all attachments.';
-	@override String get vaultSystemLockFailed => 'Could not register Windows lock events. Restart the application.';
-	@override String get vaultImport => 'Import vault';
-	@override String get vaultAllFiles => 'All files';
-	@override String get vaultDeleteVault => 'Delete vault';
-	@override String vaultDeleteVaultQuestion({required Object name}) => 'Delete vault “${name}” from this computer? All its entries and files will be deleted. This cannot be undone. Other vaults and exported backups will remain.';
-	@override String get vaultDeleted => 'Vault deleted from this computer.';
-	@override String get vaultAttachmentLimit => 'Limit: 20 MiB per file, 50 MiB total.';
-	@override String get vaultChangePasswordHelp => 'Choose a new password. Existing backups will still use their original password.';
-	@override String get fileEditorSaveFailed => 'Could not save. The vault is busy, the file changed, or the 2 MiB limit was exceeded. Retry; if there is a conflict, reopen the file.';
-	@override String get vaultDeleteFile => 'Delete file';
-	@override String get fileEditorShortcut => 'Ctrl+S · save to vault';
-	@override String get fileEditorUnsupported => 'Preview is unavailable for this format, encoding, or files over 2 MiB. Save the original file to your computer.';
-	@override String get vaultAddFile => 'Add file';
-	@override String get fileEditorStored => 'Saved in the encrypted vault';
-	@override String get vaultFileHint => 'Open file · drag to move or reorder';
-	@override String get fileEditorModified => 'Unsaved changes';
-	@override String get fileEditorCloseHelp => 'The updated file will be saved in the encrypted vault.';
-	@override String get fileEditorUnsaved => 'Save changes?';
-	@override String get fileEditorDiscard => 'Discard';
-	@override String get vaultDropLocked => 'Unlock the vault first, then drag the files here again.';
-	@override String vaultFilesAdded({required Object count}) => 'Files added: ${count}';
-	@override String get vaultDropHint => 'Drop files on a section or folder, or into the vault root.';
-	@override String get vaultDropTitle => 'Files to vault';
-	@override String get vaultDropBusy => 'Finish the current action, then drag the files here again.';
-	@override String get vaultDropFilesOnly => 'Drop individual files. Folders and links are not supported. Nothing was added.';
-	@override String get vaultDropChanged => 'A file changed while being read. Try again. Nothing was added.';
-	@override String get vaultDropReadFailed => 'Could not receive files. Try again or use Add file.';
-	@override String get vaultDropUnavailable => 'File drag-and-drop is unavailable. Restart the app or use Add file.';
-	@override String get githubTitle => 'GitHub backups';
-	@override String get githubReady => 'GitHub · ready';
-	@override String get githubPaused => 'GitHub · manual';
-	@override String get githubWorking => 'GitHub · working…';
-	@override String get githubSynced => 'GitHub · checked';
-	@override String get githubConflict => 'GitHub · conflict';
-	@override String get githubFailed => 'GitHub · needs attention';
-	@override String get githubNetworkError => 'GitHub is unavailable. Your data is saved locally; backup will retry when the connection returns.';
-	@override String get githubAuthError => 'The token expired or was revoked. Create a new token for the same repository and replace it here.';
-	@override String get githubAccessError => 'GitHub limited requests or denied access. Check permissions and try again later.';
-	@override String get githubMissingError => 'The connected repository is unavailable. Check access on GitHub; no replacement is created.';
-	@override String get githubConflictHelp => 'The remote version changed. Automatic backup is paused. Save local vaults as new backups to keep both versions, or restore a remote backup as a separate vault.';
-	@override String get githubRepositoryChangedError => 'A different repository was selected. The app retains a binding to previous backups; use the original repository. Deleting and recreating a repository with the same name gives it a new GitHub identity. Local vaults were not changed.';
-	@override String get githubRepositorySetupError => 'The new repository contains files other than README.md. For first-time setup, create a separate private repository containing only README.md. If it already contains SkySecret backups, uncheck the new-repository option. Do not delete existing backups.';
-	@override String get githubFormatError => 'The backup structure is unsupported or damaged. Working vaults were not changed.';
-	@override String get githubStorageError => 'Could not read or save protected GitHub settings. Backup stopped; check access to local storage.';
-	@override String get githubIdentityError => 'Use a token from the previously connected owner. Vaults cannot be transferred automatically to another account.';
-	@override String get githubConfigurationError => 'Enter a fine-grained token (github_pat_…) and a full https://github.com/owner/repository URL or owner/repository. https://github.com alone does not identify a repository.';
-	@override String get githubBrowserError => 'Could not open the browser. Open GitHub manually using the links in the guide.';
-	@override String get githubFindBackups => 'Refresh backup list';
-	@override String get githubCreateRepository => 'Create repository on GitHub';
-	@override String get githubAutoBackup => 'Automatic backup';
-	@override String get githubAutoBackupHelp => 'Ordinary backups are sent 5 seconds after saving; network failures are retried after 30 minutes. Vaults with synchronization enabled receive and send changes only through Synchronize at the bottom of the main window. There is no background polling. Deleting an entire local vault does not delete its GitHub copy.';
-	@override String get githubBackupNow => 'Back up now';
-	@override String githubLastBackup({required Object date, required Object time}) => 'Checked: ${date}, ${time}';
-	@override String get githubKeepBoth => 'Keep both versions';
-	@override String get githubRestore => 'Restore vault';
-	@override String get githubRestoreHelp => 'Enter the copy’s master password. Keep linking enabled to work across devices, or disable it for an independent copy. Existing vaults are not replaced. Names are encrypted, so only identifiers are shown before unlocking.';
-	@override String get githubNoBackups => 'No backups yet.';
-	@override String get githubRestoreError => 'Could not restore the vault. Check the master password and backup integrity.';
-	@override String get githubHistoryHelp => 'GitHub history retains older encrypted versions; changing the master password does not revoke them. Disconnecting removes this device’s token. Revoke it in GitHub → Settings → Developer settings → Personal access tokens.';
-	@override String get githubDisconnect => 'Disconnect GitHub';
-	@override String get githubClose => 'Close';
-	@override String get githubPending => 'GitHub · backup pending';
-	@override String get githubSetupHelp => 'GitHub stores encrypted copies of your vaults. Set up the connection once using the steps below. No OAuth App or GitHub App registration is needed.';
-	@override String get githubSetupRepositoryStep => '1. Backup storage';
-	@override String get githubSetupRepositoryHelp => 'On GitHub, select your personal account, name the repository, select Private and enable Add a README file. Do not add a .gitignore or license. If you already have a backup repository, use it.';
-	@override String get githubSetupTokenStep => '2. Access key';
-	@override String get githubSetupTokenHelp => 'The button below opens fine-grained token creation. Resource owner: your account. Repository access → Only select repositories → only your backup repository. Contents → Read and write; Metadata → Read-only. Add no other permissions. Choose an expiration, click Generate token and copy the github_pat_… value into the field below.';
-	@override String get githubSetupGuide => 'Open the full setup guide';
-	@override String get githubSetupConnectStep => '3. Connect';
-	@override String get githubSetupConnectHelp => 'Paste the full repository URL and token. Confirm the selected permissions; enable preparation for a new repository with a README. Click Connect — saved vaults will be backed up automatically. Wait for completion without errors.';
-	@override String get githubManageTokens => 'Manage tokens on GitHub';
-	@override String get githubCreateToken => 'Create GitHub token';
-	@override String get githubRepositoryAddress => 'Repository URL';
-	@override String get githubToken => 'Fine-grained token';
-	@override String get githubTokenHelp => 'Stored with Windows DPAPI protection and sent only to GitHub.';
-	@override String get githubTokenConfirmation => 'I selected only this repository in the token settings and added only Contents → Read and write.';
-	@override String get githubInitializeRepository => 'This is a new repository containing only a README — prepare it for backups.';
-	@override String get githubConnect => 'Connect';
-	@override String get githubReplaceToken => 'Replace token';
-	@override String get syncNow => 'Synchronize';
-	@override String get syncWorking => 'Connecting to GitHub…';
-	@override String get syncDone => 'The open vault matches the verified GitHub revision. Press Synchronize on your other device to receive the changes.';
-	@override String syncConflicts({required Object count}) => 'Vault synchronized. Conflicts: ${count}. Record variants were marked and preserved. Open the vault menu → Review conflicts, then synchronize the result.';
-	@override String get syncFinishEditing => 'Save or discard your changes and close file editors before synchronizing the vault.';
-	@override String get syncUnlock => 'Unlock the vault with its master password. On a new device, select a GitHub copy and enable linking for synchronization.';
-	@override String get syncKeyChanged => 'The copy uses a different key. Automatic merging is disabled: local entries will not be encrypted with that copy’s key. Your current vault is preserved. You can restore the remote version as a separate vault for review. If the previous password was exposed, connect the local vault to a new repository.';
-	@override String get syncLink => 'Link to this copy for manual synchronization between devices';
-	@override String get syncAlreadyLinked => 'This copy is already linked on this computer. Unlock the selected vault and press Synchronize.';
-	@override String get syncVaultHelp => 'Synchronize receives and sends changes for the open vault. After its first synchronization, this vault exchanges data only when you press the button. No background polling.';
-	@override String get syncRollback => 'An older revision or incompatible history was detected. Synchronization stopped and local data was preserved. Check your other devices and vault history.';
-	@override String get vaultHistory => 'History and recovery';
-	@override String get vaultHistoryHelp => 'Choose an encrypted snapshot. Recovery creates a separate vault using the password from that time. Up to 20 previous states per vault are retained within 256 MiB.';
-	@override String get vaultHistoryEmpty => 'No previous states yet.';
-	@override String get syncReviewConflicts => 'Review conflicts';
-	@override String get syncReviewHelp => 'Expand variants to compare them. Choosing one keeps it; the others remain in local history. Open files from the vault list.';
-	@override String get syncNoConflicts => 'No unresolved record conflicts.';
-	@override String syncVariant({required Object id}) => 'Variant ${id}';
-	@override String get syncKeepVariant => 'Keep this variant';
-	@override String get syncKeepVariantQuestion => 'Keep the selected variant? Other variants in this group will be removed from the current vault. The previous state remains in local history.';
-	@override String get syncRelink => 'Link to the open vault';
-	@override String get syncRelinkHelp => 'Restore the open vault’s link to this copy? The app checks identity and history. Incompatible history leaves the link unchanged. Data is sent only after you press Synchronize.';
-	@override String get syncRelinkDone => 'Link restored. Press Synchronize to exchange changes.';
-	@override String get githubRecoverConnection => 'Recover connection';
-	@override String get githubRecoverConnectionHelp => 'The connection journal is damaged. Reset the connection and enter your token again? Local vaults and history remain. Existing vaults switch to manual mode; restore each link using the chain button beside its remote copy.';
-	@override String get syncLocalConfirmed => 'The open vault matches its last confirmed exchange.';
-	@override String get syncLocalPending => 'The open vault has unconfirmed changes.';
-	@override String syncVaultChecked({required Object date}) => 'This vault: ${date}';
-	@override String get syncManualOnly => 'Exchange is manual. Changes on other devices are checked only when you press the button.';
-	@override String get syncShowPassword => 'Show or hide password';
-	@override String get sshAdd => 'New SSH connection';
-	@override String get sshConnect => 'Connect via SSH';
-	@override String get sshHost => 'Server address (DNS or IP)';
-	@override String get sshPort => 'Port';
-	@override String get sshHelp => 'The password is sent once, when OpenSSH requests it. Password access ends when the vault locks or 2 minutes after launch. The manager stays visible during sign-in. An open terminal continues running after locking.';
-	@override String get sshHostKeyTitle => 'SSH server key';
-	@override String get sshHostKeyHelp => 'Verify the key fingerprint with the server owner through an independent channel. Only trust a server you recognize. OpenSSH will save the key in known_hosts.';
-	@override String get sshTrustHost => 'Trust this key';
-	@override String get sshStarted => 'SSH terminal launched. On first connection, confirm the server key in SkySecret.';
-	@override String get sshClosed => 'SSH terminal closed.';
-	@override String get sshFailed => 'SSH failed or could not start. Check the address, server availability, password and server key.';
-	@override String get sshMissing => 'Windows OpenSSH Client was not found. Install it in Windows Optional Features.';
-	@override String get sshActive => 'An SSH terminal is already open for this entry. Close it before reconnecting.';
-	@override String get sshLimit => 'Up to 8 SSH terminals can be open at once.';
-	@override String get sshInvalid => 'Enter a DNS name or IP without a command, port 1–65535 and an ASCII username (letters, digits, _, ., -, optional trailing dollar sign). A password is required: up to 1000 UTF-8 bytes, without line breaks or NUL.';
-	@override String get captureVisible => 'Show in screen recordings';
-	@override String get captureVisibleHelp => 'Enable to include the manager and text editors in screenshots, screen recordings and screen sharing. Window contents may be captured. Off by default.';
-	@override String get captureSettingFailed => 'Could not apply the capture setting to all windows. Check their visibility in your recording software.';
-	@override String get syncKeyChangedTitle => 'The copy’s key changed';
-	@override String get syncKeepLocal => 'Keep local vault';
-	@override String get syncOpenRemoteCopy => 'Restore separately';
+  @override
+  String get vaultCreateTextFile => 'Create .txt';
+  @override
+  String get vaultCreateText => 'Create';
+  @override
+  String get vaultTextFileName => 'File name';
+  @override
+  String get vaultTextDefaultName => 'New document';
+  @override
+  String get vaultTextNameInvalid => 'Enter a valid file name. The .txt extension is added automatically.';
+  @override
+  String get vaultTextNameTaken => 'A file with this name already exists here. Choose another name.';
+  @override
+  String get vaultSecretKind => 'Secret';
+  @override
+  String get vaultRoot => 'No section';
+  @override
+  String get vaultContents => 'Contents';
+  @override
+  String get vaultLocation => 'Location';
+  @override
+  String get vaultLocationActions => 'Actions';
+  @override
+  String get vaultNewSubfolder => 'Create folder';
+  @override
+  String get vaultRenameSubfolder => 'Rename folder';
+  @override
+  String get vaultSubfolderName => 'Folder name';
+  @override
+  String get vaultDeleteSubfolder => 'Delete folder';
+  @override
+  String vaultDeleteSubfolderQuestion({required Object name}) =>
+      'Delete folder “${name}”? All its files and secrets will stay in the section.';
+  @override
+  String get vaultRootDropHint => 'Add files and secrets directly here, or create your own section.';
+  @override
+  String get vaultFolderDropHint => 'Drop files or secrets here. You can also add them from the menu.';
+  @override
+  String get vaultMoveToRoot => 'Move to the vault root';
+  @override
+  String get vaultChoose => 'Choose vault';
+  @override
+  String get vaultGeneral => 'General';
+  @override
+  String get vaultPasswordOptions => 'Password settings';
+  @override
+  String vaultPasswordLength({required Object length}) => 'Password · ${length} chars';
+  @override
+  String get vaultGeneratePassword => 'Generate';
+  @override
+  String get vaultNew => 'Create another vault';
+  @override
+  String get vaultPrimary => 'Primary vault';
+  @override
+  String vaultIdentifier({required Object id}) => 'Vault · ${id}';
+  @override
+  String get vaultDelete => 'Delete';
+  @override
+  String get vaultDeleteEntry => 'Delete entry';
+  @override
+  String vaultDeleteEntryQuestion({required Object name}) => 'Delete “${name}”? This cannot be undone.';
+  @override
+  String get vaultEditEntry => 'Edit entry';
+  @override
+  String get vaultFolders => 'Sections';
+  @override
+  String get vaultFolder => 'Section';
+  @override
+  String get vaultFolderName => 'Section name';
+  @override
+  String get vaultNewFolder => 'New section';
+  @override
+  String get vaultRenameFolder => 'Rename section';
+  @override
+  String get vaultDeleteFolder => 'Delete section';
+  @override
+  String vaultDeleteFolderQuestion({required Object name}) =>
+      'Delete section “${name}” and its folders? All files and secrets will stay in the vault root.';
+  @override
+  String get vaultFolderActions => 'Section actions';
+  @override
+  String get vaultAllEntries => 'All';
+  @override
+  String get vaultUnfiled => 'Unfiled';
+  @override
+  String get vaultEmptyFolder => 'No entries in this section yet.';
+  @override
+  String get vaultFolderNameTaken => 'This name is already used here.';
+  @override
+  String get vaultNameRequired => 'Enter a name up to 120 characters.';
+  @override
+  String get vaultRename => 'Rename vault';
+  @override
+  String get vaultName => 'Vault name';
+  @override
+  String get vaultNameOptional => 'Vault name (optional)';
+  @override
+  String vaultDropHere({required Object name}) => 'Drop an entry into “${name}”';
+  @override
+  String get vaultEntryHint => 'Click to copy password · drag to move or reorder';
+  @override
+  String get appName => 'SkySecret';
+  @override
+  String get windowsOnly => 'SkySecret runs on Windows.';
+  @override
+  String get clipboardBusy => 'Clipboard is busy. Please try again.';
+  @override
+  String get hide => 'Hide to tray · Esc';
+  @override
+  String get vault => 'Vault';
+  @override
+  String get generator => 'Generator';
+  @override
+  String get headline => 'Within reach.\nJust for you.';
+  @override
+  String get subtitle => 'One place for passwords, notes and files.';
+  @override
+  String get emptyVault => 'No vault yet';
+  @override
+  String get vaultUnavailable => 'Storage is not available yet.\nThe password generator is ready.';
+  @override
+  String get openGenerator => 'Open generator';
+  @override
+  String get newPassword => 'New password';
+  @override
+  String get generatedLocally => 'Generated on this device and never saved.';
+  @override
+  String get length => 'Length';
+  @override
+  String get symbols => 'Special characters';
+  @override
+  String get copied => 'Copied';
+  @override
+  String get copy => 'Copy';
+  @override
+  String get regenerate => 'Generate another';
+  @override
+  String get clipboardHelp => 'Cleared after 30 seconds.\nNo Windows history or sync.';
+  @override
+  String get githubDisconnected => 'GitHub disconnected';
+  @override
+  String get shortcutTitle => 'Keyboard shortcut';
+  @override
+  String get shortcutHelp => 'Click the field and press your preferred shortcut.';
+  @override
+  String get unsupportedKey => 'This key is not supported.';
+  @override
+  String get resetShortcut => 'Reset to Shift + Space';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get saving => 'Saving…';
+  @override
+  String get save => 'Save';
+  @override
+  String get readSettingsFailed => 'Could not read settings. Using Shift + Space.';
+  @override
+  String get trayFailed => 'Could not create the tray icon. Restart the application.';
+  @override
+  String get exit => 'Exit';
+  @override
+  String get retry => 'Please try again.';
+  @override
+  String get unsupportedShortcut => 'This shortcut is not supported.';
+  @override
+  String get shortcutBusy => 'This shortcut is used by Windows or another application.';
+  @override
+  String get saveSettingsFailed => 'Could not save settings. Your previous shortcut is still active.';
+  @override
+  String get trayUpdateFailed => 'Shortcut saved. The tray label will update after a restart.';
+  @override
+  String get shortcutFailed => 'Could not register this shortcut. Try another.';
+  @override
+  String openManager({required Object shortcut}) => 'Open manager    ${shortcut}';
+  @override
+  String shortcutUnavailable({required Object shortcut}) =>
+      '${shortcut} is unavailable. Open the manager from the tray.';
+  @override
+  String shortcutTaken({required Object shortcut}) => '${shortcut} is already in use. Open the manager from the tray.';
+  @override
+  String trayTooltip({required Object shortcut}) => 'SkySecret · ${shortcut}';
+  @override
+  String get shortcutPressKey => 'Now press the main key';
+  @override
+  String get shortcutListening => 'Listening for keystrokes…';
+  @override
+  String get shortcutClickToRecord => 'Click to change the shortcut';
+  @override
+  String get vaultLocal => 'Local vault';
+  @override
+  String get vaultLocked => 'Vault locked';
+  @override
+  String get vaultLock => 'Lock vault';
+  @override
+  String get vaultCreateHelp =>
+      'Choose a master password you can remember. It is required to open your data and cannot be reset.';
+  @override
+  String get vaultUnlockHelp => 'Enter your master password to open this device’s vault.';
+  @override
+  String get vaultMasterPassword => 'Master password';
+  @override
+  String get vaultConfirmPassword => 'Repeat master password';
+  @override
+  String get vaultCreate => 'Create vault';
+  @override
+  String get vaultUnlock => 'Unlock';
+  @override
+  String get vaultWorking => 'Opening vault…';
+  @override
+  String get vaultEntryTitle => 'Title';
+  @override
+  String get vaultUsername => 'Username';
+  @override
+  String get vaultEntryPassword => 'Password';
+  @override
+  String get vaultNotes => 'Notes';
+  @override
+  String get vaultAddEntry => 'Add entry';
+  @override
+  String get vaultNoEntries => 'Your vault is ready. Add your first entry.';
+  @override
+  String get vaultLocalOnly => 'Saved encrypted on this device. GitHub backup is not connected yet.';
+  @override
+  String get vaultPasswordRequired => 'Enter a master password.';
+  @override
+  String get vaultMemoryProtectionFailed =>
+      'Windows could not protect memory. The operation stopped; the saved vault is unchanged. Close unused applications and try again.';
+  @override
+  String get windowPrivacyFailed => 'Windows could not enable screen capture protection for this window.';
+  @override
+  String get vaultPasswordRequirements =>
+      'Use at least 16 characters. A long, unique passphrase is welcome; uppercase letters, digits and symbols are optional. Obvious passwords and repeated patterns are rejected.';
+  @override
+  String get vaultPasswordMismatch => 'Passwords do not match.';
+  @override
+  String get vaultUnlockFailed => 'Wrong password or damaged vault.';
+  @override
+  String get vaultFormatFailed => 'The vault is damaged or its format is not supported.';
+  @override
+  String get vaultConflict => 'The vault changed on disk. Lock and reopen it before saving.';
+  @override
+  String get vaultTitleRequired => 'Enter a title.';
+  @override
+  String get vaultLimit => 'The entry or vault exceeds the supported size.';
+  @override
+  String get vaultReadFailed => 'Could not access the vault. Check access to local application data.';
+  @override
+  String get vaultWriteFailed => 'The operation could not be completed. Check disk space and file access.';
+  @override
+  String get vaultPreferencesSaveFailed => 'Could not save settings. The change was not applied.';
+  @override
+  String get vaultSettings => 'Vault settings';
+  @override
+  String get vaultAutoLock => 'Auto-lock';
+  @override
+  String get vaultLockWhenHidden => 'Lock when hidden';
+  @override
+  String get vaultLockWhenHiddenHelp =>
+      'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.';
+  @override
+  String get vaultSnapshotCleanupWarning =>
+      'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.';
+  @override
+  String get vaultPasswordBackupWarning =>
+      'After the new password is saved, local recovery history and cached sync snapshots are deleted. Previous exports and GitHub revisions remain decryptable with the old password. If it was compromised, verify a new independent backup and replace the backup repository; old repositories and downloaded copies are not revoked automatically. Change any exposed account passwords too. New vaults and password changes use format v2; update all devices to SkySecret 0.2.0 or later.';
+  @override
+  String get vaultAutoLockHelp => 'After 2 minutes of inactivity. Windows lock and sleep always lock the vault.';
+  @override
+  String get vaultPreferencesReadFailed => 'Could not read settings. Auto-lock is enabled.';
+  @override
+  String get vaultAttachmentSaved => 'File saved to disk without encryption.';
+  @override
+  String get vaultExport => 'Export vault';
+  @override
+  String get vaultAddAttachment => 'Attach file';
+  @override
+  String get vaultSaveAttachment => 'Save file to disk';
+  @override
+  String get vaultNewPassword => 'New master password';
+  @override
+  String get vaultChangePassword => 'Master password';
+  @override
+  String get vaultInvalidFilename => 'The filename is not supported by Windows. Rename the source file.';
+  @override
+  String get vaultAttachmentHelp =>
+      'Up to 20 MiB per file, 50 MiB total. Apply changes with Save. Extracted files are not encrypted.';
+  @override
+  String get vaultImportHelp =>
+      'Enter the backup password. It will be added as a separate vault, preserving existing data.';
+  @override
+  String get vaultImportDone => 'Vault verified and imported.';
+  @override
+  String get vaultCurrentPassword => 'Current master password';
+  @override
+  String get vaultDestinationExists =>
+      'The file already exists or the vault has changed. Choose a new filename; for a password change, reopen the vault.';
+  @override
+  String get vaultAttachments => 'Files';
+  @override
+  String get vaultPasswordChanged => 'Master password changed. Create a new backup.';
+  @override
+  String get vaultExportDone => 'Encrypted backup saved with all attachments.';
+  @override
+  String get vaultSystemLockFailed => 'Could not register Windows lock events. Restart the application.';
+  @override
+  String get vaultImport => 'Import vault';
+  @override
+  String get vaultAllFiles => 'All files';
+  @override
+  String get vaultDeleteVault => 'Delete vault';
+  @override
+  String vaultDeleteVaultQuestion({required Object name}) =>
+      'Delete vault “${name}” from this computer? All its entries and files will be deleted. This cannot be undone. Other vaults and exported backups will remain.';
+  @override
+  String get vaultDeleted => 'Vault deleted from this computer.';
+  @override
+  String get vaultAttachmentLimit => 'Limit: 20 MiB per file, 50 MiB total.';
+  @override
+  String get vaultChangePasswordHelp =>
+      'Choose a new password. Existing backups will still use their original password.';
+  @override
+  String get fileEditorSaveFailed =>
+      'Could not save. The vault is busy, the file changed, or the 2 MiB limit was exceeded. Retry; if there is a conflict, reopen the file.';
+  @override
+  String get vaultDeleteFile => 'Delete file';
+  @override
+  String get fileEditorShortcut => 'Ctrl+S · save to vault';
+  @override
+  String get fileEditorUnsupported =>
+      'Preview is unavailable for this format, encoding, or files over 2 MiB. Save the original file to your computer.';
+  @override
+  String get vaultAddFile => 'Add file';
+  @override
+  String get fileEditorStored => 'Saved in the encrypted vault';
+  @override
+  String get vaultFileHint => 'Open file · drag to move or reorder';
+  @override
+  String get fileEditorModified => 'Unsaved changes';
+  @override
+  String get fileEditorCloseHelp => 'The updated file will be saved in the encrypted vault.';
+  @override
+  String get fileEditorUnsaved => 'Save changes?';
+  @override
+  String get fileEditorDiscard => 'Discard';
+  @override
+  String get vaultDropLocked => 'Unlock the vault first, then drag the files here again.';
+  @override
+  String vaultFilesAdded({required Object count}) => 'Files added: ${count}';
+  @override
+  String get vaultDropHint => 'Drop files on a section or folder, or into the vault root.';
+  @override
+  String get vaultDropTitle => 'Files to vault';
+  @override
+  String get vaultDropBusy => 'Finish the current action, then drag the files here again.';
+  @override
+  String get vaultDropFilesOnly => 'Drop individual files. Folders and links are not supported. Nothing was added.';
+  @override
+  String get vaultDropChanged => 'A file changed while being read. Try again. Nothing was added.';
+  @override
+  String get vaultDropReadFailed => 'Could not receive files. Try again or use Add file.';
+  @override
+  String get vaultDropUnavailable => 'File drag-and-drop is unavailable. Restart the app or use Add file.';
+  @override
+  String get githubTitle => 'GitHub backups';
+  @override
+  String get githubReady => 'GitHub · ready';
+  @override
+  String get githubPaused => 'GitHub · manual';
+  @override
+  String get githubWorking => 'GitHub · working…';
+  @override
+  String get githubSynced => 'GitHub · checked';
+  @override
+  String get githubConflict => 'GitHub · conflict';
+  @override
+  String get githubFailed => 'GitHub · needs attention';
+  @override
+  String get githubNetworkError =>
+      'GitHub is unavailable. Your data is saved locally; backup will retry when the connection returns.';
+  @override
+  String get githubAuthError =>
+      'The token expired or was revoked. Create a new token for the same repository and replace it here.';
+  @override
+  String get githubAccessError => 'GitHub limited requests or denied access. Check permissions and try again later.';
+  @override
+  String get githubMissingError =>
+      'The connected repository is unavailable. Check access on GitHub; no replacement is created.';
+  @override
+  String get githubConflictHelp =>
+      'The remote version changed. Automatic backup is paused. Save local vaults as new backups to keep both versions, or restore a remote backup as a separate vault.';
+  @override
+  String get githubRepositoryChangedError =>
+      'A different repository was selected. The app retains a binding to previous backups; use the original repository. Deleting and recreating a repository with the same name gives it a new GitHub identity. Local vaults were not changed.';
+  @override
+  String get githubRepositorySetupError =>
+      'The new repository contains files other than README.md. For first-time setup, create a separate private repository containing only README.md. If it already contains SkySecret backups, uncheck the new-repository option. Do not delete existing backups.';
+  @override
+  String get githubFormatError => 'The backup structure is unsupported or damaged. Working vaults were not changed.';
+  @override
+  String get githubStorageError =>
+      'Could not read or save protected GitHub settings. Backup stopped; check access to local storage.';
+  @override
+  String get githubIdentityError =>
+      'Use a token from the previously connected owner. Vaults cannot be transferred automatically to another account.';
+  @override
+  String get githubConfigurationError =>
+      'Enter a fine-grained token (github_pat_…) and a full https://github.com/owner/repository URL or owner/repository. https://github.com alone does not identify a repository.';
+  @override
+  String get githubBrowserError => 'Could not open the browser. Open GitHub manually using the links in the guide.';
+  @override
+  String get githubFindBackups => 'Refresh backup list';
+  @override
+  String get githubCreateRepository => 'Create repository on GitHub';
+  @override
+  String get githubAutoBackup => 'Automatic backup';
+  @override
+  String get githubAutoBackupHelp =>
+      'Ordinary backups are sent 5 seconds after saving; network failures are retried after 30 minutes. Vaults with synchronization enabled receive and send changes only through Synchronize at the bottom of the main window. There is no background polling. Deleting an entire local vault does not delete its GitHub copy.';
+  @override
+  String get githubBackupNow => 'Back up now';
+  @override
+  String githubLastBackup({required Object date, required Object time}) => 'Checked: ${date}, ${time}';
+  @override
+  String get githubKeepBoth => 'Keep both versions';
+  @override
+  String get githubRestore => 'Restore vault';
+  @override
+  String get githubRestoreHelp =>
+      'Enter the copy’s master password. Keep linking enabled to work across devices, or disable it for an independent copy. Existing vaults are not replaced. Names are encrypted, so only identifiers are shown before unlocking.';
+  @override
+  String get githubNoBackups => 'No backups yet.';
+  @override
+  String get githubRestoreError => 'Could not restore the vault. Check the master password and backup integrity.';
+  @override
+  String get githubHistoryHelp =>
+      'GitHub history retains older encrypted versions; changing the master password does not revoke them. Disconnecting removes this device’s token. Revoke it in GitHub → Settings → Developer settings → Personal access tokens.';
+  @override
+  String get githubDisconnect => 'Disconnect GitHub';
+  @override
+  String get githubClose => 'Close';
+  @override
+  String get githubPending => 'GitHub · backup pending';
+  @override
+  String get githubSetupHelp =>
+      'GitHub stores encrypted copies of your vaults. Set up the connection once using the steps below. No OAuth App or GitHub App registration is needed.';
+  @override
+  String get githubSetupRepositoryStep => '1. Backup storage';
+  @override
+  String get githubSetupRepositoryHelp =>
+      'On GitHub, select your personal account, name the repository, select Private and enable Add a README file. Do not add a .gitignore or license. If you already have a backup repository, use it.';
+  @override
+  String get githubSetupTokenStep => '2. Access key';
+  @override
+  String get githubSetupTokenHelp =>
+      'The button below opens fine-grained token creation. Resource owner: your account. Repository access → Only select repositories → only your backup repository. Contents → Read and write; Metadata → Read-only. Add no other permissions. Choose an expiration, click Generate token and copy the github_pat_… value into the field below.';
+  @override
+  String get githubSetupGuide => 'Open the full setup guide';
+  @override
+  String get githubSetupConnectStep => '3. Connect';
+  @override
+  String get githubSetupConnectHelp =>
+      'Paste the full repository URL and token. Confirm the selected permissions; enable preparation for a new repository with a README. Click Connect — saved vaults will be backed up automatically. Wait for completion without errors.';
+  @override
+  String get githubManageTokens => 'Manage tokens on GitHub';
+  @override
+  String get githubCreateToken => 'Create GitHub token';
+  @override
+  String get githubRepositoryAddress => 'Repository URL';
+  @override
+  String get githubToken => 'Fine-grained token';
+  @override
+  String get githubTokenHelp => 'Stored with Windows DPAPI protection and sent only to GitHub.';
+  @override
+  String get githubTokenConfirmation =>
+      'I selected only this repository in the token settings and added only Contents → Read and write.';
+  @override
+  String get githubInitializeRepository =>
+      'This is a new repository containing only a README — prepare it for backups.';
+  @override
+  String get githubConnect => 'Connect';
+  @override
+  String get githubReplaceToken => 'Replace token';
+  @override
+  String get syncNow => 'Synchronize';
+  @override
+  String get syncWorking => 'Connecting to GitHub…';
+  @override
+  String get syncDone =>
+      'The open vault matches the verified GitHub revision. Press Synchronize on your other device to receive the changes.';
+  @override
+  String syncConflicts({required Object count}) =>
+      'Vault synchronized. Conflicts: ${count}. Record variants were marked and preserved. Open the vault menu → Review conflicts, then synchronize the result.';
+  @override
+  String get syncFinishEditing => 'Save or discard your changes and close file editors before synchronizing the vault.';
+  @override
+  String get syncUnlock =>
+      'Unlock the vault with its master password. On a new device, select a GitHub copy and enable linking for synchronization.';
+  @override
+  String get syncKeyChanged =>
+      'The copy uses a different key. Automatic merging is disabled: local entries will not be encrypted with that copy’s key. Your current vault is preserved. You can restore the remote version as a separate vault for review. If the previous password was exposed, connect the local vault to a new repository.';
+  @override
+  String get syncLink => 'Link to this copy for manual synchronization between devices';
+  @override
+  String get syncAlreadyLinked =>
+      'This copy is already linked on this computer. Unlock the selected vault and press Synchronize.';
+  @override
+  String get syncVaultHelp =>
+      'Synchronize receives and sends changes for the open vault. After its first synchronization, this vault exchanges data only when you press the button. No background polling.';
+  @override
+  String get syncRollback =>
+      'An older revision or incompatible history was detected. Synchronization stopped and local data was preserved. Check your other devices and vault history.';
+  @override
+  String get vaultHistory => 'History and recovery';
+  @override
+  String get vaultHistoryHelp =>
+      'Choose an encrypted snapshot. Recovery creates a separate vault using the password from that time. Up to 20 previous states per vault are retained within 256 MiB.';
+  @override
+  String get vaultHistoryEmpty => 'No previous states yet.';
+  @override
+  String get syncReviewConflicts => 'Review conflicts';
+  @override
+  String get syncReviewHelp =>
+      'Expand variants to compare them. Choosing one keeps it; the others remain in local history. Open files from the vault list.';
+  @override
+  String get syncNoConflicts => 'No unresolved record conflicts.';
+  @override
+  String syncVariant({required Object id}) => 'Variant ${id}';
+  @override
+  String get syncKeepVariant => 'Keep this variant';
+  @override
+  String get syncKeepVariantQuestion =>
+      'Keep the selected variant? Other variants in this group will be removed from the current vault. The previous state remains in local history.';
+  @override
+  String get syncRelink => 'Link to the open vault';
+  @override
+  String get syncRelinkHelp =>
+      'Restore the open vault’s link to this copy? The app checks identity and history. Incompatible history leaves the link unchanged. Data is sent only after you press Synchronize.';
+  @override
+  String get syncRelinkDone => 'Link restored. Press Synchronize to exchange changes.';
+  @override
+  String get githubRecoverConnection => 'Recover connection';
+  @override
+  String get githubRecoverConnectionHelp =>
+      'The connection journal is damaged. Reset the connection and enter your token again? Local vaults and history remain. Existing vaults switch to manual mode; restore each link using the chain button beside its remote copy.';
+  @override
+  String get syncLocalConfirmed => 'The open vault matches its last confirmed exchange.';
+  @override
+  String get syncLocalPending => 'The open vault has unconfirmed changes.';
+  @override
+  String syncVaultChecked({required Object date}) => 'This vault: ${date}';
+  @override
+  String get syncManualOnly =>
+      'Exchange is manual. Changes on other devices are checked only when you press the button.';
+  @override
+  String get syncShowPassword => 'Show or hide password';
+  @override
+  String get sshAdd => 'New SSH connection';
+  @override
+  String get sshConnect => 'Connect via SSH';
+  @override
+  String get sshHost => 'Server address (DNS or IP)';
+  @override
+  String get sshPort => 'Port';
+  @override
+  String get sshHelp =>
+      'The password is sent once, when OpenSSH requests it. Password access ends when the vault locks or 2 minutes after launch. The manager stays visible during sign-in. An open terminal continues running after locking.';
+  @override
+  String get sshHostKeyTitle => 'SSH server key';
+  @override
+  String get sshHostKeyHelp =>
+      'Verify the key fingerprint with the server owner through an independent channel. Only trust a server you recognize. OpenSSH will save the key in known_hosts.';
+  @override
+  String get sshTrustHost => 'Trust this key';
+  @override
+  String get sshStarted => 'SSH terminal launched. On first connection, confirm the server key in SkySecret.';
+  @override
+  String get sshClosed => 'SSH terminal closed.';
+  @override
+  String get sshFailed =>
+      'SSH failed or could not start. Check the address, server availability, password and server key.';
+  @override
+  String get sshMissing => 'Windows OpenSSH Client was not found. Install it in Windows Optional Features.';
+  @override
+  String get sshActive => 'An SSH terminal is already open for this entry. Close it before reconnecting.';
+  @override
+  String get sshLimit => 'Up to 8 SSH terminals can be open at once.';
+  @override
+  String get sshInvalid =>
+      'Enter a DNS name or IP without a command, port 1–65535 and an ASCII username (letters, digits, _, ., -, optional trailing dollar sign). A password is required: up to 1000 UTF-8 bytes, without line breaks or NUL.';
+  @override
+  String get captureVisible => 'Show in screen recordings';
+  @override
+  String get captureVisibleHelp =>
+      'Enable to include the manager and text editors in screenshots, screen recordings and screen sharing. Window contents may be captured. Off by default.';
+  @override
+  String get captureSettingFailed =>
+      'Could not apply the capture setting to all windows. Check their visibility in your recording software.';
+  @override
+  String get syncKeyChangedTitle => 'The copy’s key changed';
+  @override
+  String get syncKeepLocal => 'Keep local vault';
+  @override
+  String get syncOpenRemoteCopy => 'Restore separately';
+  @override
+  String get browserAll => 'All';
+  @override
+  String get browserFavorites => 'Favorites';
+  @override
+  String browserTrash({required Object count}) => 'Trash (${count})';
+  @override
+  String get browserSearch => 'Search';
+  @override
+  String get browserSearchHint => 'Name, username, server or folder';
+  @override
+  String get browserCloseSearch => 'Close search';
+  @override
+  String get browserTrashHelp =>
+      'Deleted entries stay encrypted here until you remove them permanently. They count toward vault limits. Existing backups may retain older copies.';
+  @override
+  String get browserEmptyTrash => 'Empty trash';
+  @override
+  String get browserNoResults => 'No matching entries';
+  @override
+  String get browserNoFavorites => 'Mark an entry with a star to find it here.';
+  @override
+  String get browserTrashEmpty => 'Trash is empty';
+  @override
+  String get browserFavorite => 'Add to favorites';
+  @override
+  String get browserUnfavorite => 'Remove from favorites';
+  @override
+  String get browserRestore => 'Restore';
+  @override
+  String get browserDeleteForever => 'Delete permanently';
+  @override
+  String browserDeleteForeverHelp({required Object name}) =>
+      'Permanently remove “${name}” from this vault? This cannot be undone here. Existing backups and recovery history may retain copies.';
+  @override
+  String browserEmptyTrashHelp({required Object count}) =>
+      'Permanently remove ${count} entries from trash? This cannot be undone here. Existing backups and recovery history may retain copies.';
+  @override
+  String get browserMovedToTrash => 'Moved to encrypted trash';
+  @override
+  String get browserUndo => 'Undo';
+  @override
+  String get browserRestored => 'Entry restored';
+  @override
+  String get searchKeyboardHelp => '↑ ↓ Select   ·   Enter Open / copy   ·   Esc Close';
+  @override
+  String get searchCopyPassword => 'Copy password';
+  @override
+  String get searchUnavailable => 'Search could not be opened. Try again.';
+  @override
+  String get searchRefine => 'Showing the first 50 matches. Refine your search.';
+  @override
+  String get searchStartTyping => 'Type to find a vault entry';
+  @override
+  String get searchOpenFile => 'Open file';
 }
 
 extension on TranslationsEn {
-	dynamic _flatMapFunction(String path) {
-		return switch (path) {
-			'vaultCreateTextFile' => 'Create .txt',
-			'vaultCreateText' => 'Create',
-			'vaultTextFileName' => 'File name',
-			'vaultTextDefaultName' => 'New document',
-			'vaultTextNameInvalid' => 'Enter a valid file name. The .txt extension is added automatically.',
-			'vaultTextNameTaken' => 'A file with this name already exists here. Choose another name.',
-			'vaultSecretKind' => 'Secret',
-			'vaultRoot' => 'No section',
-			'vaultContents' => 'Contents',
-			'vaultLocation' => 'Location',
-			'vaultLocationActions' => 'Actions',
-			'vaultNewSubfolder' => 'Create folder',
-			'vaultRenameSubfolder' => 'Rename folder',
-			'vaultSubfolderName' => 'Folder name',
-			'vaultDeleteSubfolder' => 'Delete folder',
-			'vaultDeleteSubfolderQuestion' => ({required Object name}) => 'Delete folder “${name}”? All its files and secrets will stay in the section.',
-			'vaultRootDropHint' => 'Add files and secrets directly here, or create your own section.',
-			'vaultFolderDropHint' => 'Drop files or secrets here. You can also add them from the menu.',
-			'vaultMoveToRoot' => 'Move to the vault root',
-			'vaultChoose' => 'Choose vault',
-			'vaultGeneral' => 'General',
-			'vaultPasswordOptions' => 'Password settings',
-			'vaultPasswordLength' => ({required Object length}) => 'Password · ${length} chars',
-			'vaultGeneratePassword' => 'Generate',
-			'vaultNew' => 'Create another vault',
-			'vaultPrimary' => 'Primary vault',
-			'vaultIdentifier' => ({required Object id}) => 'Vault · ${id}',
-			'vaultDelete' => 'Delete',
-			'vaultDeleteEntry' => 'Delete entry',
-			'vaultDeleteEntryQuestion' => ({required Object name}) => 'Delete “${name}”? This cannot be undone.',
-			'vaultEditEntry' => 'Edit entry',
-			'vaultFolders' => 'Sections',
-			'vaultFolder' => 'Section',
-			'vaultFolderName' => 'Section name',
-			'vaultNewFolder' => 'New section',
-			'vaultRenameFolder' => 'Rename section',
-			'vaultDeleteFolder' => 'Delete section',
-			'vaultDeleteFolderQuestion' => ({required Object name}) => 'Delete section “${name}” and its folders? All files and secrets will stay in the vault root.',
-			'vaultFolderActions' => 'Section actions',
-			'vaultAllEntries' => 'All',
-			'vaultUnfiled' => 'Unfiled',
-			'vaultEmptyFolder' => 'No entries in this section yet.',
-			'vaultFolderNameTaken' => 'This name is already used here.',
-			'vaultNameRequired' => 'Enter a name up to 120 characters.',
-			'vaultRename' => 'Rename vault',
-			'vaultName' => 'Vault name',
-			'vaultNameOptional' => 'Vault name (optional)',
-			'vaultDropHere' => ({required Object name}) => 'Drop an entry into “${name}”',
-			'vaultEntryHint' => 'Click to copy password · drag to move or reorder',
-			'appName' => 'SkySecret',
-			'windowsOnly' => 'SkySecret runs on Windows.',
-			'clipboardBusy' => 'Clipboard is busy. Please try again.',
-			'hide' => 'Hide to tray · Esc',
-			'vault' => 'Vault',
-			'generator' => 'Generator',
-			'headline' => 'Within reach.\nJust for you.',
-			'subtitle' => 'One place for passwords, notes and files.',
-			'emptyVault' => 'No vault yet',
-			'vaultUnavailable' => 'Storage is not available yet.\nThe password generator is ready.',
-			'openGenerator' => 'Open generator',
-			'newPassword' => 'New password',
-			'generatedLocally' => 'Generated on this device and never saved.',
-			'length' => 'Length',
-			'symbols' => 'Special characters',
-			'copied' => 'Copied',
-			'copy' => 'Copy',
-			'regenerate' => 'Generate another',
-			'clipboardHelp' => 'Cleared after 30 seconds.\nNo Windows history or sync.',
-			'githubDisconnected' => 'GitHub disconnected',
-			'shortcutTitle' => 'Keyboard shortcut',
-			'shortcutHelp' => 'Click the field and press your preferred shortcut.',
-			'unsupportedKey' => 'This key is not supported.',
-			'resetShortcut' => 'Reset to Shift + Space',
-			'cancel' => 'Cancel',
-			'saving' => 'Saving…',
-			'save' => 'Save',
-			'readSettingsFailed' => 'Could not read settings. Using Shift + Space.',
-			'trayFailed' => 'Could not create the tray icon. Restart the application.',
-			'exit' => 'Exit',
-			'retry' => 'Please try again.',
-			'unsupportedShortcut' => 'This shortcut is not supported.',
-			'shortcutBusy' => 'This shortcut is used by Windows or another application.',
-			'saveSettingsFailed' => 'Could not save settings. Your previous shortcut is still active.',
-			'trayUpdateFailed' => 'Shortcut saved. The tray label will update after a restart.',
-			'shortcutFailed' => 'Could not register this shortcut. Try another.',
-			'openManager' => ({required Object shortcut}) => 'Open manager    ${shortcut}',
-			'shortcutUnavailable' => ({required Object shortcut}) => '${shortcut} is unavailable. Open the manager from the tray.',
-			'shortcutTaken' => ({required Object shortcut}) => '${shortcut} is already in use. Open the manager from the tray.',
-			'trayTooltip' => ({required Object shortcut}) => 'SkySecret · ${shortcut}',
-			'shortcutPressKey' => 'Now press the main key',
-			'shortcutListening' => 'Listening for keystrokes…',
-			'shortcutClickToRecord' => 'Click to change the shortcut',
-			'vaultLocal' => 'Local vault',
-			'vaultLocked' => 'Vault locked',
-			'vaultLock' => 'Lock vault',
-			'vaultCreateHelp' => 'Choose a master password you can remember. It is required to open your data and cannot be reset.',
-			'vaultUnlockHelp' => 'Enter your master password to open this device’s vault.',
-			'vaultMasterPassword' => 'Master password',
-			'vaultConfirmPassword' => 'Repeat master password',
-			'vaultCreate' => 'Create vault',
-			'vaultUnlock' => 'Unlock',
-			'vaultWorking' => 'Opening vault…',
-			'vaultEntryTitle' => 'Title',
-			'vaultUsername' => 'Username',
-			'vaultEntryPassword' => 'Password',
-			'vaultNotes' => 'Notes',
-			'vaultAddEntry' => 'Add entry',
-			'vaultNoEntries' => 'Your vault is ready. Add your first entry.',
-			'vaultLocalOnly' => 'Saved encrypted on this device. GitHub backup is not connected yet.',
-			'vaultPasswordRequired' => 'Enter a master password.',
-			'vaultMemoryProtectionFailed' => 'Windows could not protect memory. The operation stopped; the saved vault is unchanged. Close unused applications and try again.',
-			'windowPrivacyFailed' => 'Windows could not enable screen capture protection for this window.',
-			'vaultPasswordRequirements' => 'Use at least 16 characters. A long, unique passphrase is welcome; uppercase letters, digits and symbols are optional. Obvious passwords and repeated patterns are rejected.',
-			'vaultPasswordMismatch' => 'Passwords do not match.',
-			'vaultUnlockFailed' => 'Wrong password or damaged vault.',
-			'vaultFormatFailed' => 'The vault is damaged or its format is not supported.',
-			'vaultConflict' => 'The vault changed on disk. Lock and reopen it before saving.',
-			'vaultTitleRequired' => 'Enter a title.',
-			'vaultLimit' => 'The entry or vault exceeds the supported size.',
-			'vaultReadFailed' => 'Could not access the vault. Check access to local application data.',
-			'vaultWriteFailed' => 'The operation could not be completed. Check disk space and file access.',
-			'vaultPreferencesSaveFailed' => 'Could not save settings. The change was not applied.',
-			'vaultSettings' => 'Vault settings',
-			'vaultAutoLock' => 'Auto-lock',
-			'vaultLockWhenHidden' => 'Lock when hidden',
-			'vaultLockWhenHiddenHelp' => 'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.',
-			'vaultSnapshotCleanupWarning' => 'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.',
-			'vaultPasswordBackupWarning' => 'After the new password is saved, local recovery history and cached sync snapshots are deleted. Previous exports and GitHub revisions remain decryptable with the old password. If it was compromised, verify a new independent backup and replace the backup repository; old repositories and downloaded copies are not revoked automatically. Change any exposed account passwords too. New vaults and password changes use format v2; update all devices to SkySecret 0.2.0 or later.',
-			'vaultAutoLockHelp' => 'After 2 minutes of inactivity. Windows lock and sleep always lock the vault.',
-			'vaultPreferencesReadFailed' => 'Could not read settings. Auto-lock is enabled.',
-			'vaultAttachmentSaved' => 'File saved to disk without encryption.',
-			'vaultExport' => 'Export vault',
-			'vaultAddAttachment' => 'Attach file',
-			'vaultSaveAttachment' => 'Save file to disk',
-			'vaultNewPassword' => 'New master password',
-			'vaultChangePassword' => 'Master password',
-			'vaultInvalidFilename' => 'The filename is not supported by Windows. Rename the source file.',
-			'vaultAttachmentHelp' => 'Up to 20 MiB per file, 50 MiB total. Apply changes with Save. Extracted files are not encrypted.',
-			'vaultImportHelp' => 'Enter the backup password. It will be added as a separate vault, preserving existing data.',
-			'vaultImportDone' => 'Vault verified and imported.',
-			'vaultCurrentPassword' => 'Current master password',
-			'vaultDestinationExists' => 'The file already exists or the vault has changed. Choose a new filename; for a password change, reopen the vault.',
-			'vaultAttachments' => 'Files',
-			'vaultPasswordChanged' => 'Master password changed. Create a new backup.',
-			'vaultExportDone' => 'Encrypted backup saved with all attachments.',
-			'vaultSystemLockFailed' => 'Could not register Windows lock events. Restart the application.',
-			'vaultImport' => 'Import vault',
-			'vaultAllFiles' => 'All files',
-			'vaultDeleteVault' => 'Delete vault',
-			'vaultDeleteVaultQuestion' => ({required Object name}) => 'Delete vault “${name}” from this computer? All its entries and files will be deleted. This cannot be undone. Other vaults and exported backups will remain.',
-			'vaultDeleted' => 'Vault deleted from this computer.',
-			'vaultAttachmentLimit' => 'Limit: 20 MiB per file, 50 MiB total.',
-			'vaultChangePasswordHelp' => 'Choose a new password. Existing backups will still use their original password.',
-			'fileEditorSaveFailed' => 'Could not save. The vault is busy, the file changed, or the 2 MiB limit was exceeded. Retry; if there is a conflict, reopen the file.',
-			'vaultDeleteFile' => 'Delete file',
-			'fileEditorShortcut' => 'Ctrl+S · save to vault',
-			'fileEditorUnsupported' => 'Preview is unavailable for this format, encoding, or files over 2 MiB. Save the original file to your computer.',
-			'vaultAddFile' => 'Add file',
-			'fileEditorStored' => 'Saved in the encrypted vault',
-			'vaultFileHint' => 'Open file · drag to move or reorder',
-			'fileEditorModified' => 'Unsaved changes',
-			'fileEditorCloseHelp' => 'The updated file will be saved in the encrypted vault.',
-			'fileEditorUnsaved' => 'Save changes?',
-			'fileEditorDiscard' => 'Discard',
-			'vaultDropLocked' => 'Unlock the vault first, then drag the files here again.',
-			'vaultFilesAdded' => ({required Object count}) => 'Files added: ${count}',
-			'vaultDropHint' => 'Drop files on a section or folder, or into the vault root.',
-			'vaultDropTitle' => 'Files to vault',
-			'vaultDropBusy' => 'Finish the current action, then drag the files here again.',
-			'vaultDropFilesOnly' => 'Drop individual files. Folders and links are not supported. Nothing was added.',
-			'vaultDropChanged' => 'A file changed while being read. Try again. Nothing was added.',
-			'vaultDropReadFailed' => 'Could not receive files. Try again or use Add file.',
-			'vaultDropUnavailable' => 'File drag-and-drop is unavailable. Restart the app or use Add file.',
-			'githubTitle' => 'GitHub backups',
-			'githubReady' => 'GitHub · ready',
-			'githubPaused' => 'GitHub · manual',
-			'githubWorking' => 'GitHub · working…',
-			'githubSynced' => 'GitHub · checked',
-			'githubConflict' => 'GitHub · conflict',
-			'githubFailed' => 'GitHub · needs attention',
-			'githubNetworkError' => 'GitHub is unavailable. Your data is saved locally; backup will retry when the connection returns.',
-			'githubAuthError' => 'The token expired or was revoked. Create a new token for the same repository and replace it here.',
-			'githubAccessError' => 'GitHub limited requests or denied access. Check permissions and try again later.',
-			'githubMissingError' => 'The connected repository is unavailable. Check access on GitHub; no replacement is created.',
-			'githubConflictHelp' => 'The remote version changed. Automatic backup is paused. Save local vaults as new backups to keep both versions, or restore a remote backup as a separate vault.',
-			'githubRepositoryChangedError' => 'A different repository was selected. The app retains a binding to previous backups; use the original repository. Deleting and recreating a repository with the same name gives it a new GitHub identity. Local vaults were not changed.',
-			'githubRepositorySetupError' => 'The new repository contains files other than README.md. For first-time setup, create a separate private repository containing only README.md. If it already contains SkySecret backups, uncheck the new-repository option. Do not delete existing backups.',
-			'githubFormatError' => 'The backup structure is unsupported or damaged. Working vaults were not changed.',
-			'githubStorageError' => 'Could not read or save protected GitHub settings. Backup stopped; check access to local storage.',
-			'githubIdentityError' => 'Use a token from the previously connected owner. Vaults cannot be transferred automatically to another account.',
-			'githubConfigurationError' => 'Enter a fine-grained token (github_pat_…) and a full https://github.com/owner/repository URL or owner/repository. https://github.com alone does not identify a repository.',
-			'githubBrowserError' => 'Could not open the browser. Open GitHub manually using the links in the guide.',
-			'githubFindBackups' => 'Refresh backup list',
-			'githubCreateRepository' => 'Create repository on GitHub',
-			'githubAutoBackup' => 'Automatic backup',
-			'githubAutoBackupHelp' => 'Ordinary backups are sent 5 seconds after saving; network failures are retried after 30 minutes. Vaults with synchronization enabled receive and send changes only through Synchronize at the bottom of the main window. There is no background polling. Deleting an entire local vault does not delete its GitHub copy.',
-			'githubBackupNow' => 'Back up now',
-			'githubLastBackup' => ({required Object date, required Object time}) => 'Checked: ${date}, ${time}',
-			'githubKeepBoth' => 'Keep both versions',
-			'githubRestore' => 'Restore vault',
-			'githubRestoreHelp' => 'Enter the copy’s master password. Keep linking enabled to work across devices, or disable it for an independent copy. Existing vaults are not replaced. Names are encrypted, so only identifiers are shown before unlocking.',
-			'githubNoBackups' => 'No backups yet.',
-			'githubRestoreError' => 'Could not restore the vault. Check the master password and backup integrity.',
-			'githubHistoryHelp' => 'GitHub history retains older encrypted versions; changing the master password does not revoke them. Disconnecting removes this device’s token. Revoke it in GitHub → Settings → Developer settings → Personal access tokens.',
-			'githubDisconnect' => 'Disconnect GitHub',
-			'githubClose' => 'Close',
-			'githubPending' => 'GitHub · backup pending',
-			'githubSetupHelp' => 'GitHub stores encrypted copies of your vaults. Set up the connection once using the steps below. No OAuth App or GitHub App registration is needed.',
-			'githubSetupRepositoryStep' => '1. Backup storage',
-			'githubSetupRepositoryHelp' => 'On GitHub, select your personal account, name the repository, select Private and enable Add a README file. Do not add a .gitignore or license. If you already have a backup repository, use it.',
-			'githubSetupTokenStep' => '2. Access key',
-			'githubSetupTokenHelp' => 'The button below opens fine-grained token creation. Resource owner: your account. Repository access → Only select repositories → only your backup repository. Contents → Read and write; Metadata → Read-only. Add no other permissions. Choose an expiration, click Generate token and copy the github_pat_… value into the field below.',
-			'githubSetupGuide' => 'Open the full setup guide',
-			'githubSetupConnectStep' => '3. Connect',
-			'githubSetupConnectHelp' => 'Paste the full repository URL and token. Confirm the selected permissions; enable preparation for a new repository with a README. Click Connect — saved vaults will be backed up automatically. Wait for completion without errors.',
-			'githubManageTokens' => 'Manage tokens on GitHub',
-			'githubCreateToken' => 'Create GitHub token',
-			'githubRepositoryAddress' => 'Repository URL',
-			'githubToken' => 'Fine-grained token',
-			'githubTokenHelp' => 'Stored with Windows DPAPI protection and sent only to GitHub.',
-			'githubTokenConfirmation' => 'I selected only this repository in the token settings and added only Contents → Read and write.',
-			'githubInitializeRepository' => 'This is a new repository containing only a README — prepare it for backups.',
-			'githubConnect' => 'Connect',
-			'githubReplaceToken' => 'Replace token',
-			'syncNow' => 'Synchronize',
-			'syncWorking' => 'Connecting to GitHub…',
-			'syncDone' => 'The open vault matches the verified GitHub revision. Press Synchronize on your other device to receive the changes.',
-			'syncConflicts' => ({required Object count}) => 'Vault synchronized. Conflicts: ${count}. Record variants were marked and preserved. Open the vault menu → Review conflicts, then synchronize the result.',
-			'syncFinishEditing' => 'Save or discard your changes and close file editors before synchronizing the vault.',
-			'syncUnlock' => 'Unlock the vault with its master password. On a new device, select a GitHub copy and enable linking for synchronization.',
-			'syncKeyChanged' => 'The copy uses a different key. Automatic merging is disabled: local entries will not be encrypted with that copy’s key. Your current vault is preserved. You can restore the remote version as a separate vault for review. If the previous password was exposed, connect the local vault to a new repository.',
-			'syncLink' => 'Link to this copy for manual synchronization between devices',
-			'syncAlreadyLinked' => 'This copy is already linked on this computer. Unlock the selected vault and press Synchronize.',
-			'syncVaultHelp' => 'Synchronize receives and sends changes for the open vault. After its first synchronization, this vault exchanges data only when you press the button. No background polling.',
-			'syncRollback' => 'An older revision or incompatible history was detected. Synchronization stopped and local data was preserved. Check your other devices and vault history.',
-			'vaultHistory' => 'History and recovery',
-			'vaultHistoryHelp' => 'Choose an encrypted snapshot. Recovery creates a separate vault using the password from that time. Up to 20 previous states per vault are retained within 256 MiB.',
-			'vaultHistoryEmpty' => 'No previous states yet.',
-			'syncReviewConflicts' => 'Review conflicts',
-			'syncReviewHelp' => 'Expand variants to compare them. Choosing one keeps it; the others remain in local history. Open files from the vault list.',
-			'syncNoConflicts' => 'No unresolved record conflicts.',
-			'syncVariant' => ({required Object id}) => 'Variant ${id}',
-			'syncKeepVariant' => 'Keep this variant',
-			'syncKeepVariantQuestion' => 'Keep the selected variant? Other variants in this group will be removed from the current vault. The previous state remains in local history.',
-			'syncRelink' => 'Link to the open vault',
-			'syncRelinkHelp' => 'Restore the open vault’s link to this copy? The app checks identity and history. Incompatible history leaves the link unchanged. Data is sent only after you press Synchronize.',
-			'syncRelinkDone' => 'Link restored. Press Synchronize to exchange changes.',
-			'githubRecoverConnection' => 'Recover connection',
-			'githubRecoverConnectionHelp' => 'The connection journal is damaged. Reset the connection and enter your token again? Local vaults and history remain. Existing vaults switch to manual mode; restore each link using the chain button beside its remote copy.',
-			'syncLocalConfirmed' => 'The open vault matches its last confirmed exchange.',
-			'syncLocalPending' => 'The open vault has unconfirmed changes.',
-			'syncVaultChecked' => ({required Object date}) => 'This vault: ${date}',
-			'syncManualOnly' => 'Exchange is manual. Changes on other devices are checked only when you press the button.',
-			'syncShowPassword' => 'Show or hide password',
-			'sshAdd' => 'New SSH connection',
-			'sshConnect' => 'Connect via SSH',
-			'sshHost' => 'Server address (DNS or IP)',
-			'sshPort' => 'Port',
-			'sshHelp' => 'The password is sent once, when OpenSSH requests it. Password access ends when the vault locks or 2 minutes after launch. The manager stays visible during sign-in. An open terminal continues running after locking.',
-			'sshHostKeyTitle' => 'SSH server key',
-			'sshHostKeyHelp' => 'Verify the key fingerprint with the server owner through an independent channel. Only trust a server you recognize. OpenSSH will save the key in known_hosts.',
-			'sshTrustHost' => 'Trust this key',
-			'sshStarted' => 'SSH terminal launched. On first connection, confirm the server key in SkySecret.',
-			'sshClosed' => 'SSH terminal closed.',
-			'sshFailed' => 'SSH failed or could not start. Check the address, server availability, password and server key.',
-			'sshMissing' => 'Windows OpenSSH Client was not found. Install it in Windows Optional Features.',
-			'sshActive' => 'An SSH terminal is already open for this entry. Close it before reconnecting.',
-			'sshLimit' => 'Up to 8 SSH terminals can be open at once.',
-			'sshInvalid' => 'Enter a DNS name or IP without a command, port 1–65535 and an ASCII username (letters, digits, _, ., -, optional trailing dollar sign). A password is required: up to 1000 UTF-8 bytes, without line breaks or NUL.',
-			'captureVisible' => 'Show in screen recordings',
-			'captureVisibleHelp' => 'Enable to include the manager and text editors in screenshots, screen recordings and screen sharing. Window contents may be captured. Off by default.',
-			'captureSettingFailed' => 'Could not apply the capture setting to all windows. Check their visibility in your recording software.',
-			'syncKeyChangedTitle' => 'The copy’s key changed',
-			'syncKeepLocal' => 'Keep local vault',
-			'syncOpenRemoteCopy' => 'Restore separately',
-			_ => null,
-		};
-	}
+  dynamic _flatMapFunction(String path) {
+    return switch (path) {
+      'vaultCreateTextFile' => 'Create .txt',
+      'vaultCreateText' => 'Create',
+      'vaultTextFileName' => 'File name',
+      'vaultTextDefaultName' => 'New document',
+      'vaultTextNameInvalid' => 'Enter a valid file name. The .txt extension is added automatically.',
+      'vaultTextNameTaken' => 'A file with this name already exists here. Choose another name.',
+      'vaultSecretKind' => 'Secret',
+      'vaultRoot' => 'No section',
+      'vaultContents' => 'Contents',
+      'vaultLocation' => 'Location',
+      'vaultLocationActions' => 'Actions',
+      'vaultNewSubfolder' => 'Create folder',
+      'vaultRenameSubfolder' => 'Rename folder',
+      'vaultSubfolderName' => 'Folder name',
+      'vaultDeleteSubfolder' => 'Delete folder',
+      'vaultDeleteSubfolderQuestion' => ({
+        required Object name,
+      }) => 'Delete folder “${name}”? All its files and secrets will stay in the section.',
+      'vaultRootDropHint' => 'Add files and secrets directly here, or create your own section.',
+      'vaultFolderDropHint' => 'Drop files or secrets here. You can also add them from the menu.',
+      'vaultMoveToRoot' => 'Move to the vault root',
+      'vaultChoose' => 'Choose vault',
+      'vaultGeneral' => 'General',
+      'vaultPasswordOptions' => 'Password settings',
+      'vaultPasswordLength' => ({required Object length}) => 'Password · ${length} chars',
+      'vaultGeneratePassword' => 'Generate',
+      'vaultNew' => 'Create another vault',
+      'vaultPrimary' => 'Primary vault',
+      'vaultIdentifier' => ({required Object id}) => 'Vault · ${id}',
+      'vaultDelete' => 'Delete',
+      'vaultDeleteEntry' => 'Delete entry',
+      'vaultDeleteEntryQuestion' => ({required Object name}) => 'Delete “${name}”? This cannot be undone.',
+      'vaultEditEntry' => 'Edit entry',
+      'vaultFolders' => 'Sections',
+      'vaultFolder' => 'Section',
+      'vaultFolderName' => 'Section name',
+      'vaultNewFolder' => 'New section',
+      'vaultRenameFolder' => 'Rename section',
+      'vaultDeleteFolder' => 'Delete section',
+      'vaultDeleteFolderQuestion' => ({
+        required Object name,
+      }) => 'Delete section “${name}” and its folders? All files and secrets will stay in the vault root.',
+      'vaultFolderActions' => 'Section actions',
+      'vaultAllEntries' => 'All',
+      'vaultUnfiled' => 'Unfiled',
+      'vaultEmptyFolder' => 'No entries in this section yet.',
+      'vaultFolderNameTaken' => 'This name is already used here.',
+      'vaultNameRequired' => 'Enter a name up to 120 characters.',
+      'vaultRename' => 'Rename vault',
+      'vaultName' => 'Vault name',
+      'vaultNameOptional' => 'Vault name (optional)',
+      'vaultDropHere' => ({required Object name}) => 'Drop an entry into “${name}”',
+      'vaultEntryHint' => 'Click to copy password · drag to move or reorder',
+      'appName' => 'SkySecret',
+      'windowsOnly' => 'SkySecret runs on Windows.',
+      'clipboardBusy' => 'Clipboard is busy. Please try again.',
+      'hide' => 'Hide to tray · Esc',
+      'vault' => 'Vault',
+      'generator' => 'Generator',
+      'headline' => 'Within reach.\nJust for you.',
+      'subtitle' => 'One place for passwords, notes and files.',
+      'emptyVault' => 'No vault yet',
+      'vaultUnavailable' => 'Storage is not available yet.\nThe password generator is ready.',
+      'openGenerator' => 'Open generator',
+      'newPassword' => 'New password',
+      'generatedLocally' => 'Generated on this device and never saved.',
+      'length' => 'Length',
+      'symbols' => 'Special characters',
+      'copied' => 'Copied',
+      'copy' => 'Copy',
+      'regenerate' => 'Generate another',
+      'clipboardHelp' => 'Cleared after 30 seconds.\nNo Windows history or sync.',
+      'githubDisconnected' => 'GitHub disconnected',
+      'shortcutTitle' => 'Keyboard shortcut',
+      'shortcutHelp' => 'Click the field and press your preferred shortcut.',
+      'unsupportedKey' => 'This key is not supported.',
+      'resetShortcut' => 'Reset to Shift + Space',
+      'cancel' => 'Cancel',
+      'saving' => 'Saving…',
+      'save' => 'Save',
+      'readSettingsFailed' => 'Could not read settings. Using Shift + Space.',
+      'trayFailed' => 'Could not create the tray icon. Restart the application.',
+      'exit' => 'Exit',
+      'retry' => 'Please try again.',
+      'unsupportedShortcut' => 'This shortcut is not supported.',
+      'shortcutBusy' => 'This shortcut is used by Windows or another application.',
+      'saveSettingsFailed' => 'Could not save settings. Your previous shortcut is still active.',
+      'trayUpdateFailed' => 'Shortcut saved. The tray label will update after a restart.',
+      'shortcutFailed' => 'Could not register this shortcut. Try another.',
+      'openManager' => ({required Object shortcut}) => 'Open manager    ${shortcut}',
+      'shortcutUnavailable' => ({
+        required Object shortcut,
+      }) => '${shortcut} is unavailable. Open the manager from the tray.',
+      'shortcutTaken' => ({
+        required Object shortcut,
+      }) => '${shortcut} is already in use. Open the manager from the tray.',
+      'trayTooltip' => ({required Object shortcut}) => 'SkySecret · ${shortcut}',
+      'shortcutPressKey' => 'Now press the main key',
+      'shortcutListening' => 'Listening for keystrokes…',
+      'shortcutClickToRecord' => 'Click to change the shortcut',
+      'vaultLocal' => 'Local vault',
+      'vaultLocked' => 'Vault locked',
+      'vaultLock' => 'Lock vault',
+      'vaultCreateHelp' =>
+        'Choose a master password you can remember. It is required to open your data and cannot be reset.',
+      'vaultUnlockHelp' => 'Enter your master password to open this device’s vault.',
+      'vaultMasterPassword' => 'Master password',
+      'vaultConfirmPassword' => 'Repeat master password',
+      'vaultCreate' => 'Create vault',
+      'vaultUnlock' => 'Unlock',
+      'vaultWorking' => 'Opening vault…',
+      'vaultEntryTitle' => 'Title',
+      'vaultUsername' => 'Username',
+      'vaultEntryPassword' => 'Password',
+      'vaultNotes' => 'Notes',
+      'vaultAddEntry' => 'Add entry',
+      'vaultNoEntries' => 'Your vault is ready. Add your first entry.',
+      'vaultLocalOnly' => 'Saved encrypted on this device. GitHub backup is not connected yet.',
+      'vaultPasswordRequired' => 'Enter a master password.',
+      'vaultMemoryProtectionFailed' => 'Windows could not protect memory. The operation stopped; the saved vault is unchanged. Close unused applications and try again.',
+      'windowPrivacyFailed' => 'Windows could not enable screen capture protection for this window.',
+      'vaultPasswordRequirements' => 'Use at least 16 characters. A long, unique passphrase is welcome; uppercase letters, digits and symbols are optional. Obvious passwords and repeated patterns are rejected.',
+      'vaultPasswordMismatch' => 'Passwords do not match.',
+      'vaultUnlockFailed' => 'Wrong password or damaged vault.',
+      'vaultFormatFailed' => 'The vault is damaged or its format is not supported.',
+      'vaultConflict' => 'The vault changed on disk. Lock and reopen it before saving.',
+      'vaultTitleRequired' => 'Enter a title.',
+      'vaultLimit' => 'The entry or vault exceeds the supported size.',
+      'vaultReadFailed' => 'Could not access the vault. Check access to local application data.',
+      'vaultWriteFailed' => 'The operation could not be completed. Check disk space and file access.',
+      'vaultPreferencesSaveFailed' => 'Could not save settings. The change was not applied.',
+      'vaultSettings' => 'Vault settings',
+      'vaultAutoLock' => 'Auto-lock',
+      'vaultLockWhenHidden' => 'Lock when hidden',
+      'vaultLockWhenHiddenHelp' => 'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.',
+      'vaultSnapshotCleanupWarning' => 'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.',
+      'vaultPasswordBackupWarning' => 'After the new password is saved, local recovery history and cached sync snapshots are deleted. Previous exports and GitHub revisions remain decryptable with the old password. If it was compromised, verify a new independent backup and replace the backup repository; old repositories and downloaded copies are not revoked automatically. Change any exposed account passwords too. New vaults and password changes use format v2; update all devices to SkySecret 0.2.0 or later.',
+      'vaultAutoLockHelp' => 'After 2 minutes of inactivity. Windows lock and sleep always lock the vault.',
+      'vaultPreferencesReadFailed' => 'Could not read settings. Auto-lock is enabled.',
+      'vaultAttachmentSaved' => 'File saved to disk without encryption.',
+      'vaultExport' => 'Export vault',
+      'vaultAddAttachment' => 'Attach file',
+      'vaultSaveAttachment' => 'Save file to disk',
+      'vaultNewPassword' => 'New master password',
+      'vaultChangePassword' => 'Master password',
+      'vaultInvalidFilename' => 'The filename is not supported by Windows. Rename the source file.',
+      'vaultAttachmentHelp' =>
+        'Up to 20 MiB per file, 50 MiB total. Apply changes with Save. Extracted files are not encrypted.',
+      'vaultImportHelp' => 'Enter the backup password. It will be added as a separate vault, preserving existing data.',
+      'vaultImportDone' => 'Vault verified and imported.',
+      'vaultCurrentPassword' => 'Current master password',
+      'vaultDestinationExists' => 'The file already exists or the vault has changed. Choose a new filename; for a password change, reopen the vault.',
+      'vaultAttachments' => 'Files',
+      'vaultPasswordChanged' => 'Master password changed. Create a new backup.',
+      'vaultExportDone' => 'Encrypted backup saved with all attachments.',
+      'vaultSystemLockFailed' => 'Could not register Windows lock events. Restart the application.',
+      'vaultImport' => 'Import vault',
+      'vaultAllFiles' => 'All files',
+      'vaultDeleteVault' => 'Delete vault',
+      'vaultDeleteVaultQuestion' => ({
+        required Object name,
+      }) => 'Delete vault “${name}” from this computer? All its entries and files will be deleted. This cannot be undone. Other vaults and exported backups will remain.',
+      'vaultDeleted' => 'Vault deleted from this computer.',
+      'vaultAttachmentLimit' => 'Limit: 20 MiB per file, 50 MiB total.',
+      'vaultChangePasswordHelp' => 'Choose a new password. Existing backups will still use their original password.',
+      'fileEditorSaveFailed' => 'Could not save. The vault is busy, the file changed, or the 2 MiB limit was exceeded. Retry; if there is a conflict, reopen the file.',
+      'vaultDeleteFile' => 'Delete file',
+      'fileEditorShortcut' => 'Ctrl+S · save to vault',
+      'fileEditorUnsupported' => 'Preview is unavailable for this format, encoding, or files over 2 MiB. Save the original file to your computer.',
+      'vaultAddFile' => 'Add file',
+      'fileEditorStored' => 'Saved in the encrypted vault',
+      'vaultFileHint' => 'Open file · drag to move or reorder',
+      'fileEditorModified' => 'Unsaved changes',
+      'fileEditorCloseHelp' => 'The updated file will be saved in the encrypted vault.',
+      'fileEditorUnsaved' => 'Save changes?',
+      'fileEditorDiscard' => 'Discard',
+      'vaultDropLocked' => 'Unlock the vault first, then drag the files here again.',
+      'vaultFilesAdded' => ({required Object count}) => 'Files added: ${count}',
+      'vaultDropHint' => 'Drop files on a section or folder, or into the vault root.',
+      'vaultDropTitle' => 'Files to vault',
+      'vaultDropBusy' => 'Finish the current action, then drag the files here again.',
+      'vaultDropFilesOnly' => 'Drop individual files. Folders and links are not supported. Nothing was added.',
+      'vaultDropChanged' => 'A file changed while being read. Try again. Nothing was added.',
+      'vaultDropReadFailed' => 'Could not receive files. Try again or use Add file.',
+      'vaultDropUnavailable' => 'File drag-and-drop is unavailable. Restart the app or use Add file.',
+      'githubTitle' => 'GitHub backups',
+      'githubReady' => 'GitHub · ready',
+      'githubPaused' => 'GitHub · manual',
+      'githubWorking' => 'GitHub · working…',
+      'githubSynced' => 'GitHub · checked',
+      'githubConflict' => 'GitHub · conflict',
+      'githubFailed' => 'GitHub · needs attention',
+      'githubNetworkError' =>
+        'GitHub is unavailable. Your data is saved locally; backup will retry when the connection returns.',
+      'githubAuthError' =>
+        'The token expired or was revoked. Create a new token for the same repository and replace it here.',
+      'githubAccessError' => 'GitHub limited requests or denied access. Check permissions and try again later.',
+      'githubMissingError' =>
+        'The connected repository is unavailable. Check access on GitHub; no replacement is created.',
+      'githubConflictHelp' => 'The remote version changed. Automatic backup is paused. Save local vaults as new backups to keep both versions, or restore a remote backup as a separate vault.',
+      'githubRepositoryChangedError' => 'A different repository was selected. The app retains a binding to previous backups; use the original repository. Deleting and recreating a repository with the same name gives it a new GitHub identity. Local vaults were not changed.',
+      'githubRepositorySetupError' => 'The new repository contains files other than README.md. For first-time setup, create a separate private repository containing only README.md. If it already contains SkySecret backups, uncheck the new-repository option. Do not delete existing backups.',
+      'githubFormatError' => 'The backup structure is unsupported or damaged. Working vaults were not changed.',
+      'githubStorageError' =>
+        'Could not read or save protected GitHub settings. Backup stopped; check access to local storage.',
+      'githubIdentityError' => 'Use a token from the previously connected owner. Vaults cannot be transferred automatically to another account.',
+      'githubConfigurationError' => 'Enter a fine-grained token (github_pat_…) and a full https://github.com/owner/repository URL or owner/repository. https://github.com alone does not identify a repository.',
+      'githubBrowserError' => 'Could not open the browser. Open GitHub manually using the links in the guide.',
+      'githubFindBackups' => 'Refresh backup list',
+      'githubCreateRepository' => 'Create repository on GitHub',
+      'githubAutoBackup' => 'Automatic backup',
+      'githubAutoBackupHelp' => 'Ordinary backups are sent 5 seconds after saving; network failures are retried after 30 minutes. Vaults with synchronization enabled receive and send changes only through Synchronize at the bottom of the main window. There is no background polling. Deleting an entire local vault does not delete its GitHub copy.',
+      'githubBackupNow' => 'Back up now',
+      'githubLastBackup' => ({required Object date, required Object time}) => 'Checked: ${date}, ${time}',
+      'githubKeepBoth' => 'Keep both versions',
+      'githubRestore' => 'Restore vault',
+      'githubRestoreHelp' => 'Enter the copy’s master password. Keep linking enabled to work across devices, or disable it for an independent copy. Existing vaults are not replaced. Names are encrypted, so only identifiers are shown before unlocking.',
+      'githubNoBackups' => 'No backups yet.',
+      'githubRestoreError' => 'Could not restore the vault. Check the master password and backup integrity.',
+      'githubHistoryHelp' => 'GitHub history retains older encrypted versions; changing the master password does not revoke them. Disconnecting removes this device’s token. Revoke it in GitHub → Settings → Developer settings → Personal access tokens.',
+      'githubDisconnect' => 'Disconnect GitHub',
+      'githubClose' => 'Close',
+      'githubPending' => 'GitHub · backup pending',
+      'githubSetupHelp' => 'GitHub stores encrypted copies of your vaults. Set up the connection once using the steps below. No OAuth App or GitHub App registration is needed.',
+      'githubSetupRepositoryStep' => '1. Backup storage',
+      'githubSetupRepositoryHelp' => 'On GitHub, select your personal account, name the repository, select Private and enable Add a README file. Do not add a .gitignore or license. If you already have a backup repository, use it.',
+      'githubSetupTokenStep' => '2. Access key',
+      'githubSetupTokenHelp' => 'The button below opens fine-grained token creation. Resource owner: your account. Repository access → Only select repositories → only your backup repository. Contents → Read and write; Metadata → Read-only. Add no other permissions. Choose an expiration, click Generate token and copy the github_pat_… value into the field below.',
+      'githubSetupGuide' => 'Open the full setup guide',
+      'githubSetupConnectStep' => '3. Connect',
+      'githubSetupConnectHelp' => 'Paste the full repository URL and token. Confirm the selected permissions; enable preparation for a new repository with a README. Click Connect — saved vaults will be backed up automatically. Wait for completion without errors.',
+      'githubManageTokens' => 'Manage tokens on GitHub',
+      'githubCreateToken' => 'Create GitHub token',
+      'githubRepositoryAddress' => 'Repository URL',
+      'githubToken' => 'Fine-grained token',
+      'githubTokenHelp' => 'Stored with Windows DPAPI protection and sent only to GitHub.',
+      'githubTokenConfirmation' =>
+        'I selected only this repository in the token settings and added only Contents → Read and write.',
+      'githubInitializeRepository' => 'This is a new repository containing only a README — prepare it for backups.',
+      'githubConnect' => 'Connect',
+      'githubReplaceToken' => 'Replace token',
+      'syncNow' => 'Synchronize',
+      'syncWorking' => 'Connecting to GitHub…',
+      'syncDone' => 'The open vault matches the verified GitHub revision. Press Synchronize on your other device to receive the changes.',
+      'syncConflicts' => ({
+        required Object count,
+      }) => 'Vault synchronized. Conflicts: ${count}. Record variants were marked and preserved. Open the vault menu → Review conflicts, then synchronize the result.',
+      'syncFinishEditing' => 'Save or discard your changes and close file editors before synchronizing the vault.',
+      'syncUnlock' => 'Unlock the vault with its master password. On a new device, select a GitHub copy and enable linking for synchronization.',
+      'syncKeyChanged' => 'The copy uses a different key. Automatic merging is disabled: local entries will not be encrypted with that copy’s key. Your current vault is preserved. You can restore the remote version as a separate vault for review. If the previous password was exposed, connect the local vault to a new repository.',
+      'syncLink' => 'Link to this copy for manual synchronization between devices',
+      'syncAlreadyLinked' =>
+        'This copy is already linked on this computer. Unlock the selected vault and press Synchronize.',
+      'syncVaultHelp' => 'Synchronize receives and sends changes for the open vault. After its first synchronization, this vault exchanges data only when you press the button. No background polling.',
+      'syncRollback' => 'An older revision or incompatible history was detected. Synchronization stopped and local data was preserved. Check your other devices and vault history.',
+      'vaultHistory' => 'History and recovery',
+      'vaultHistoryHelp' => 'Choose an encrypted snapshot. Recovery creates a separate vault using the password from that time. Up to 20 previous states per vault are retained within 256 MiB.',
+      'vaultHistoryEmpty' => 'No previous states yet.',
+      'syncReviewConflicts' => 'Review conflicts',
+      'syncReviewHelp' => 'Expand variants to compare them. Choosing one keeps it; the others remain in local history. Open files from the vault list.',
+      'syncNoConflicts' => 'No unresolved record conflicts.',
+      'syncVariant' => ({required Object id}) => 'Variant ${id}',
+      'syncKeepVariant' => 'Keep this variant',
+      'syncKeepVariantQuestion' => 'Keep the selected variant? Other variants in this group will be removed from the current vault. The previous state remains in local history.',
+      'syncRelink' => 'Link to the open vault',
+      'syncRelinkHelp' => 'Restore the open vault’s link to this copy? The app checks identity and history. Incompatible history leaves the link unchanged. Data is sent only after you press Synchronize.',
+      'syncRelinkDone' => 'Link restored. Press Synchronize to exchange changes.',
+      'githubRecoverConnection' => 'Recover connection',
+      'githubRecoverConnectionHelp' => 'The connection journal is damaged. Reset the connection and enter your token again? Local vaults and history remain. Existing vaults switch to manual mode; restore each link using the chain button beside its remote copy.',
+      'syncLocalConfirmed' => 'The open vault matches its last confirmed exchange.',
+      'syncLocalPending' => 'The open vault has unconfirmed changes.',
+      'syncVaultChecked' => ({required Object date}) => 'This vault: ${date}',
+      'syncManualOnly' => 'Exchange is manual. Changes on other devices are checked only when you press the button.',
+      'syncShowPassword' => 'Show or hide password',
+      'sshAdd' => 'New SSH connection',
+      'sshConnect' => 'Connect via SSH',
+      'sshHost' => 'Server address (DNS or IP)',
+      'sshPort' => 'Port',
+      'sshHelp' => 'The password is sent once, when OpenSSH requests it. Password access ends when the vault locks or 2 minutes after launch. The manager stays visible during sign-in. An open terminal continues running after locking.',
+      'sshHostKeyTitle' => 'SSH server key',
+      'sshHostKeyHelp' => 'Verify the key fingerprint with the server owner through an independent channel. Only trust a server you recognize. OpenSSH will save the key in known_hosts.',
+      'sshTrustHost' => 'Trust this key',
+      'sshStarted' => 'SSH terminal launched. On first connection, confirm the server key in SkySecret.',
+      'sshClosed' => 'SSH terminal closed.',
+      'sshFailed' => 'SSH failed or could not start. Check the address, server availability, password and server key.',
+      'sshMissing' => 'Windows OpenSSH Client was not found. Install it in Windows Optional Features.',
+      'sshActive' => 'An SSH terminal is already open for this entry. Close it before reconnecting.',
+      'sshLimit' => 'Up to 8 SSH terminals can be open at once.',
+      'sshInvalid' => 'Enter a DNS name or IP without a command, port 1–65535 and an ASCII username (letters, digits, _, ., -, optional trailing dollar sign). A password is required: up to 1000 UTF-8 bytes, without line breaks or NUL.',
+      'captureVisible' => 'Show in screen recordings',
+      'captureVisibleHelp' => 'Enable to include the manager and text editors in screenshots, screen recordings and screen sharing. Window contents may be captured. Off by default.',
+      'captureSettingFailed' =>
+        'Could not apply the capture setting to all windows. Check their visibility in your recording software.',
+      'syncKeyChangedTitle' => 'The copy’s key changed',
+      'syncKeepLocal' => 'Keep local vault',
+      'syncOpenRemoteCopy' => 'Restore separately',
+      'browserAll' => 'All',
+      'browserFavorites' => 'Favorites',
+      'browserTrash' => ({required Object count}) => 'Trash (${count})',
+      'browserSearch' => 'Search',
+      'browserSearchHint' => 'Name, username, server or folder',
+      'browserCloseSearch' => 'Close search',
+      'browserTrashHelp' => 'Deleted entries stay encrypted here until you remove them permanently. They count toward vault limits. Existing backups may retain older copies.',
+      'browserEmptyTrash' => 'Empty trash',
+      'browserNoResults' => 'No matching entries',
+      'browserNoFavorites' => 'Mark an entry with a star to find it here.',
+      'browserTrashEmpty' => 'Trash is empty',
+      'browserFavorite' => 'Add to favorites',
+      'browserUnfavorite' => 'Remove from favorites',
+      'browserRestore' => 'Restore',
+      'browserDeleteForever' => 'Delete permanently',
+      'browserDeleteForeverHelp' => ({
+        required Object name,
+      }) => 'Permanently remove “${name}” from this vault? This cannot be undone here. Existing backups and recovery history may retain copies.',
+      'browserEmptyTrashHelp' => ({
+        required Object count,
+      }) => 'Permanently remove ${count} entries from trash? This cannot be undone here. Existing backups and recovery history may retain copies.',
+      'browserMovedToTrash' => 'Moved to encrypted trash',
+      'browserUndo' => 'Undo',
+      'browserRestored' => 'Entry restored',
+      'searchKeyboardHelp' => '↑ ↓ Select   ·   Enter Open / copy   ·   Esc Close',
+      'searchCopyPassword' => 'Copy password',
+      'searchUnavailable' => 'Search could not be opened. Try again.',
+      'searchRefine' => 'Showing the first 50 matches. Refine your search.',
+      'searchStartTyping' => 'Type to find a vault entry',
+      'searchOpenFile' => 'Open file',
+      _ => null,
+    };
+  }
 }

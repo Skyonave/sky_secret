@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/desktop/vault_preferences.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/settings/vault_preferences.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 
 import 'manager_window_test.dart' show FakeDesktop, FakeClipboard;
@@ -66,9 +66,7 @@ void main() {
     Future<void> configure(bool enabled) async {
       await tester.tap(find.byKey(const Key('vault-settings')));
       await tester.pumpAndSettle();
-      tester
-          .widget<SwitchListTile>(find.byKey(const Key('auto-lock-switch')))
-          .onChanged!(enabled);
+      tester.widget<SwitchListTile>(find.byKey(const Key('auto-lock-switch'))).onChanged!(enabled);
       await tester.pump();
       await tester.tap(find.byKey(const Key('save-vault-preferences')));
       await tester.pumpAndSettle();
@@ -97,33 +95,22 @@ void main() {
       await mount(tester, OrganizationStore(session));
       await tester.tap(find.byKey(const Key('add-entry')));
       await tester.pumpAndSettle();
-      String password() => tester
-          .widget<TextField>(find.byKey(const Key('entry-password')))
-          .controller!
-          .text;
+      String password() => tester.widget<TextField>(find.byKey(const Key('entry-password'))).controller!.text;
       expect(password().length, 24);
       expect(find.text(t.vaultPasswordLength(length: 24)), findsOneWidget);
       final original = password();
       await tester.tap(find.byKey(const Key('entry-password-options')));
       await tester.pumpAndSettle();
-      tester
-          .widget<Slider>(find.byKey(const Key('entry-length-slider')))
-          .onChanged!(48);
-      tester
-          .widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch')))
-          .onChanged!(false);
+      tester.widget<Slider>(find.byKey(const Key('entry-length-slider'))).onChanged!(48);
+      tester.widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch'))).onChanged!(false);
       await tester.pump();
       await tester.tap(find.text(t.cancel).last);
       await tester.pumpAndSettle();
       expect(password(), original);
       await tester.tap(find.byKey(const Key('entry-password-options')));
       await tester.pumpAndSettle();
-      tester
-          .widget<Slider>(find.byKey(const Key('entry-length-slider')))
-          .onChanged!(48);
-      tester
-          .widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch')))
-          .onChanged!(false);
+      tester.widget<Slider>(find.byKey(const Key('entry-length-slider'))).onChanged!(48);
+      tester.widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch'))).onChanged!(false);
       await tester.pump();
       await tester.tap(find.byKey(const Key('apply-password-options')));
       await tester.pumpAndSettle();

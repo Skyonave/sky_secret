@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:skysecret/desktop/shortcut_settings.dart';
+import 'package:skysecret/core/settings/shortcut_settings.dart';
 
 void main() {
   test(

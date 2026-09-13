@@ -5,8 +5,8 @@ import 'package:skysecret/ui/shared/native_file_drop_target.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/desktop/focus_dismissal.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/desktop/focus_dismissal.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 
 import 'manager_window_test.dart' show FakeDesktop, FakeClipboard;

@@ -66,6 +66,8 @@ jobs:
           ./test/run-unit-tests.ps1
       - name: Build Windows x64
         run: flutter build windows --release --no-pub --no-tree-shake-icons
+      - name: Native window focus unit tests
+        run: ./test/run-native-unit-tests.ps1
       - name: Package EXE and verification archive
         env:
           RELEASE_TAG: ${{ github.ref_name }}

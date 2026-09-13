@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 import 'manager_window_test.dart' show FakeDesktop, FakeClipboard;
 import 'vault_organization_ui_test.dart' show OrganizationStore;
@@ -53,10 +53,7 @@ void main() {
       expect(session.isLocked, isTrue);
       expect(find.byKey(const Key('lock-vault')), findsNothing);
       expect(
-        tester
-            .widget<TextField>(find.byKey(const Key('vault-master')))
-            .controller!
-            .text,
+        tester.widget<TextField>(find.byKey(const Key('vault-master'))).controller!.text,
         isEmpty,
       );
       await tester.pumpWidget(const SizedBox.shrink());

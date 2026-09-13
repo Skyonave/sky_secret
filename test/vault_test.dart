@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 void main() {
   const password = 'Synthetic test phrase — тест 🧪 1!';
@@ -30,9 +30,7 @@ void main() {
           associatedData: List.filled(12, 4),
         );
     expect(
-      (await key.extractBytes())
-          .map((v) => v.toRadixString(16).padLeft(2, '0'))
-          .join(),
+      (await key.extractBytes()).map((v) => v.toRadixString(16).padLeft(2, '0')).join(),
       '0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659',
     );
     key.destroy();

@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/desktop/desktop_actions.dart';
-import 'package:skysecret/desktop/sensitive_clipboard.dart';
-import 'package:skysecret/desktop/shortcut_settings.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/desktop/desktop_actions.dart';
+import 'package:skysecret/core/desktop/clipboard/sensitive_clipboard.dart';
+import 'package:skysecret/core/settings/shortcut_settings.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 
 import 'support/password_preview_assertions.dart';
@@ -105,8 +105,7 @@ void main() {
     await tester.pump();
   }
 
-  String password(WidgetTester tester) =>
-      tester.widget<Text>(find.byKey(const Key('generated-password'))).data!;
+  String password(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('generated-password'))).data!;
 
   testWidgets('empty state, generator, Escape and close hide', (tester) async {
     final desktop = FakeDesktop();
@@ -135,9 +134,7 @@ void main() {
         await open(tester, FakeDesktop(), size: size);
         await generator(tester);
         final content = find.byKey(const Key('manager-content'));
-        final scrollable = find
-            .descendant(of: content, matching: find.byType(Scrollable))
-            .first;
+        final scrollable = find.descendant(of: content, matching: find.byType(Scrollable)).first;
         for (final length in [24.0, 64.0, 12.0]) {
           final slider = tester.widget<Slider>(
             find.byKey(const Key('length-slider')),
@@ -254,9 +251,7 @@ void main() {
     await tester.pump();
     expect(find.text('Ctrl + …'), findsOneWidget);
     expect(
-      tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, t.save))
-          .onPressed,
+      tester.widget<FilledButton>(find.widgetWithText(FilledButton, t.save)).onPressed,
       isNull,
     );
     await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);

@@ -144,6 +144,8 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  const BOOL cloaked = TRUE;
+  DwmSetWindowAttribute(window, DWMWA_CLOAK, &cloaked, sizeof(cloaked));
   UpdateTheme(window);
 
   return OnCreate();
@@ -179,6 +181,11 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_SHOWWINDOW: {
+      const BOOL cloaked = wparam == FALSE;
+      DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, &cloaked, sizeof(cloaked));
+      break;
+    }
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
@@ -208,7 +215,7 @@ Win32Window::MessageHandler(HWND hwnd,
     }
 
     case WM_ACTIVATE:
-      if (LOWORD(wparam) != WA_INACTIVE && child_content_ != nullptr) {
+      if (LOWORD(wparam) != WA_INACTIVE && child_content_ != nullptr && IsWindowVisible(hwnd)) {
         SetFocus(child_content_);
       }
       return 0;
@@ -253,7 +260,9 @@ void Win32Window::SetChildContent(HWND content) {
   MoveWindow(content, frame.left, frame.top, frame.right - frame.left,
              frame.bottom - frame.top, true);
 
-  SetFocus(child_content_);
+  if (IsWindowVisible(window_handle_) && GetActiveWindow() == window_handle_) {
+    SetFocus(child_content_);
+  }
 }
 
 RECT Win32Window::GetClientArea() {

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/desktop/vault_preferences.dart';
+import 'package:skysecret/core/settings/vault_preferences.dart';
 
 void main() {
   test('capture defaults off, persists independently and failed writes preserve it', () async {
@@ -22,11 +22,16 @@ void main() {
     expect(finalRead.captureAllowed, isTrue);
     expect(finalRead.lockWhenHidden, isFalse);
     final previous = await file.readAsString();
-    await Directory('${file.path}.tmp').create();
-    await expectLater(finalRead.save(true, lockWhenHidden: true, captureAllowed: false),
-      throwsA(isA<FileSystemException>()));
+    await file.rename('${file.path}.saved');
+    await Directory(file.path).create();
+    await expectLater(
+      finalRead.save(true, lockWhenHidden: true, captureAllowed: false),
+      throwsA(isA<FileSystemException>()),
+    );
     expect(finalRead.captureAllowed, isTrue);
-    expect(await file.readAsString(), previous);
+    expect(await File('${file.path}.saved').readAsString(), previous);
+    await Directory(file.path).delete();
+    await File('${file.path}.saved').rename(file.path);
     await file.writeAsString('{"version":1,"autoLockEnabled":true,"captureAllowed":"true"}');
     final invalid = VaultPreferences(file: file);
     await expectLater(invalid.loadAutoLock(), throwsFormatException);
@@ -57,7 +62,8 @@ void main() {
         '{"version":1,"autoLockEnabled":false,"lockWhenHidden":"false"}',
       );
       await expectLater(finalRead.loadAutoLock(), throwsFormatException);
-      await Directory('${file.path}.tmp').create();
+      await file.rename('${file.path}.saved');
+      await Directory(file.path).create();
       await expectLater(
         finalRead.save(false, lockWhenHidden: true),
         throwsA(isA<FileSystemException>()),

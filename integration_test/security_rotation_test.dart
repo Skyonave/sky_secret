@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 
 import '../test/manager_window_test.dart' show FakeClipboard, FakeDesktop;

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 void main() {
   test('lock revokes original, moved, replaced and removed secret references', () async {

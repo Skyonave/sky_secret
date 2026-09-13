@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/desktop/file_editor_channel.dart';
+import 'package:skysecret/core/desktop/windows/file_editor_channel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +38,10 @@ void main() {
 
     final connected = connectFileEditor(
       channel: channel,
-      getWindowId: () async { windowRequested = true; return 123; },
+      getWindowId: () async {
+        windowRequested = true;
+        return 123;
+      },
       onLock: () async {},
     );
     await Future<void>.delayed(Duration.zero);
@@ -57,11 +60,17 @@ void main() {
       throw PlatformException(code: 'CHANNEL_LIMIT_REACHED');
     });
     addTearDown(() => messenger.setMockMethodCallHandler(native, null));
-    await expectLater(connectFileEditor(
-      channel: channel,
-      getWindowId: () async { windowRequested = true; return 123; },
-      onLock: () async {},
-    ), throwsA(isA<WindowChannelException>()));
+    await expectLater(
+      connectFileEditor(
+        channel: channel,
+        getWindowId: () async {
+          windowRequested = true;
+          return 123;
+        },
+        onLock: () async {},
+      ),
+      throwsA(isA<WindowChannelException>()),
+    );
     expect(windowRequested, isFalse);
   });
 
@@ -72,9 +81,17 @@ void main() {
     messenger.setMockMethodCallHandler(native, (call) async {
       if (call.method == 'invokeMethod') {
         final completed = Completer<void>();
-        messenger.handlePlatformMessage(native.name, codec.encodeMethodCall(MethodCall('methodCall', {
-          'channel': channel.name, 'method': 'lock', 'arguments': null,
-        })), (_) => completed.complete());
+        messenger.handlePlatformMessage(
+          native.name,
+          codec.encodeMethodCall(
+            MethodCall('methodCall', {
+              'channel': channel.name,
+              'method': 'lock',
+              'arguments': null,
+            }),
+          ),
+          (_) => completed.complete(),
+        );
         await completed.future;
         expect(locked, isTrue);
         return false;
@@ -85,10 +102,15 @@ void main() {
       await channel.setMethodCallHandler(null);
       messenger.setMockMethodCallHandler(native, null);
     });
-    expect(await connectFileEditor(
-      channel: channel,
-      getWindowId: () async => 123,
-      onLock: () async { locked = true; },
-    ), isFalse);
+    expect(
+      await connectFileEditor(
+        channel: channel,
+        getWindowId: () async => 123,
+        onLock: () async {
+          locked = true;
+        },
+      ),
+      isFalse,
+    );
   });
 }

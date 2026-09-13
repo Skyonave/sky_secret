@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 void main() {
   test(
@@ -52,9 +52,7 @@ void main() {
           {'A', 'B'},
         );
         expect(
-          merged.entries
-              .where((e) => e.isFile)
-              .fold<int>(0, (n, e) => n + e.attachments.single.size),
+          merged.entries.where((e) => e.isFile).fold<int>(0, (n, e) => n + e.attachments.single.size),
           VaultCipher.maxTotalAttachmentBytes,
         );
         final pending = local.openRevision(original);

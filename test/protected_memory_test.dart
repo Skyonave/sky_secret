@@ -2,7 +2,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/protected_memory.dart';
+import 'package:skysecret/core/crypto/protected_memory.dart';
 
 void main() {
   test('text destroy and session revocation reject reads and adoption', () {

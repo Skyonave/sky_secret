@@ -39,6 +39,8 @@ add_subdirectory("runner")
 
 
 include(flutter/generated_plugins.cmake)
+include(desktop-window-focus.cmake)
+include(window-layout.cmake)
 
 
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")

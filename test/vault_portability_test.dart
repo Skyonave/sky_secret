@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 import 'vault_sections_test.dart' show fixture;
 
@@ -138,8 +138,7 @@ void main() {
       final expectedEntry = entries.single.toJson();
       final failing = VaultStore(
         file: store.file,
-        beforeCommit: () async =>
-            throw const FileSystemException('Synthetic failure'),
+        beforeCommit: () async => throw const FileSystemException('Synthetic failure'),
       );
       await expectLater(
         failing.changePassword(

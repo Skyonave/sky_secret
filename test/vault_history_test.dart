@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 void main() {
   const password = 'Synthetic history password 123!';
@@ -47,8 +47,7 @@ void main() {
       final store = catalog.legacy.store;
       final session = await store.create(password);
       final before = session.persistedBytes;
-      await File(store.historyDirectory.path)
-          .writeAsString('synthetic obstruction');
+      await File(store.historyDirectory.path).writeAsString('synthetic obstruction');
       await expectLater(
         store.save(session, [VaultEntry.create(title: 'Synthetic')]),
         throwsA(isA<VaultFormatException>()),
@@ -94,8 +93,7 @@ void main() {
       expect(await catalog.legacy.store.writerIdentity(), id);
       final second = catalog.newVault().store;
       await second.file.parent.create(recursive: true);
-      await File('${first.file.path}.writer')
-          .copy('${second.file.path}.writer');
+      await File('${first.file.path}.writer').copy('${second.file.path}.writer');
       expect(await second.writerIdentity(), isNot(id));
     },
   );

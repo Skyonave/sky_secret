@@ -1,7 +1,7 @@
 import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/cancellable_worker.dart';
+import 'package:skysecret/core/crypto/cancellable_worker.dart';
 
 Future<int> Function() waitingJob(
   SendPort started,

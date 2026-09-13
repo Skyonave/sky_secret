@@ -1,16 +1,21 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 import 'vault_sections_test.dart' show fixture;
 
 void main() {
   test('long unique passphrases need no composition rules', () {
     for (final value in [
-      '', 'short phrase', '                ', 'password12345678',
-      'correct horse battery staple', 'abcdabcdabcdabcd',
-      '1234567890123456', 'abcdefghijklmnop',
+      '',
+      'short phrase',
+      '                ',
+      'password12345678',
+      'correct horse battery staple',
+      'abcdabcdabcdabcd',
+      '1234567890123456',
+      'abcdefghijklmnop',
       'synthetic\nlong passphrase',
       'A1!😀😀😀😀😀😀😀😀😀😀😀😀',
       'A1!e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301',
@@ -21,7 +26,8 @@ void main() {
       'violet boats drift over quiet lakes',
       'тихие лодки плывут над озером',
       'UPPERCASE WORDS CAN FORM A PHRASE',
-      'sixteen letters!', 'A1!😀😀😀😀😀😀😀😀😀😀😀😀😀',
+      'sixteen letters!',
+      'A1!😀😀😀😀😀😀😀😀😀😀😀😀😀',
       'the word password is allowed inside a long phrase',
     ]) {
       expect(MasterPasswordPolicy.accepts(value), isTrue, reason: 'Synthetic accepted fixture');

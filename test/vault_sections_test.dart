@@ -5,9 +5,13 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/dart.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
-Future<Uint8List> fixture(Map<String, dynamic> contents, {String password = 'synthetic legacy password', int version = 1}) async {
+Future<Uint8List> fixture(
+  Map<String, dynamic> contents, {
+  String password = 'synthetic legacy password',
+  int version = 1,
+}) async {
   final header = Uint8List(56)..setRange(0, 8, [83, 77, 86, 65, 85, 76, 84, 0]);
   final view = ByteData.sublistView(header);
   view.setUint32(8, version);
@@ -73,8 +77,7 @@ void main() {
     final changed = session.entries.single.inFolder(folder.id);
     final failing = VaultStore(
       file: file,
-      beforeCommit: () async =>
-          throw const FileSystemException('Synthetic failure'),
+      beforeCommit: () async => throw const FileSystemException('Synthetic failure'),
     );
     await expectLater(
       failing.save(

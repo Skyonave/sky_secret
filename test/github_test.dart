@@ -4,11 +4,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/github/github_api.dart';
-import 'package:skysecret/github/github_credentials.dart';
-import 'package:skysecret/github/github_backup.dart';
-import 'package:skysecret/github/github_storage.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/sync/github/github_api.dart';
+import 'package:skysecret/core/sync/github/github_credentials.dart';
+import 'package:skysecret/core/sync/github/github_backup.dart';
+import 'package:skysecret/core/sync/github/github_storage.dart';
 
 const h0 = '0000000000000000000000000000000000000000';
 const h1 = '1111111111111111111111111111111111111111';
@@ -43,8 +43,7 @@ Map<String, dynamic> seed() => {
   'repoId': 7,
   'credential': syntheticToken,
 };
-Matcher fails(GitHubProblem problem) =>
-    throwsA(isA<GitHubFailure>().having((e) => e.problem, 'problem', problem));
+Matcher fails(GitHubProblem problem) => throwsA(isA<GitHubFailure>().having((e) => e.problem, 'problem', problem));
 
 class CapturedTimer implements Timer {
   CapturedTimer(this.delay, this.callback);
@@ -70,8 +69,7 @@ class MemoryStorage implements GitHubStorage {
   int writes = 0;
   int? failAt;
   @override
-  Future<Map<String, dynamic>?> read() async =>
-      value == null ? null : object(jsonDecode(jsonEncode(value)));
+  Future<Map<String, dynamic>?> read() async => value == null ? null : object(jsonDecode(jsonEncode(value)));
   @override
   Future<void> write(Map<String, dynamic> data) async {
     writes++;
@@ -92,8 +90,7 @@ class FakeGitHub extends GitHubApi {
   int identity = 42;
   bool loseResponse = false, race = false, deny = false;
   @override
-  Future<GitHubUser> user(String token) async =>
-      GitHubUser.fromJson({'id': identity, 'login': 'fixture'});
+  Future<GitHubUser> user(String token) async => GitHubUser.fromJson({'id': identity, 'login': 'fixture'});
   @override
   Future<GitHubRepository> repository(String token, int id, int userId) async {
     reads++;
@@ -192,8 +189,7 @@ void main() {
         expect(() => FineGrainedToken(invalid), throwsA(isA<GitHubFailure>()));
       }
       expect(
-        GitHubRepositoryAddress.parse('https://github.com/owner/repo.git')
-            .label,
+        GitHubRepositoryAddress.parse('https://github.com/owner/repo.git').label,
         'owner/repo',
       );
       for (final invalid in [
@@ -369,8 +365,7 @@ void main() {
       backup.dispose();
       await directory.delete(recursive: true);
     });
-    Future<void> local([List<int> bytes = const [1, 2, 3]]) =>
-        catalog.legacy.file.writeAsBytes(bytes, flush: true);
+    Future<void> local([List<int> bytes = const [1, 2, 3]]) => catalog.legacy.file.writeAsBytes(bytes, flush: true);
 
     Future<void> idle() async {
       for (var i = 0; i < 500 && backup.busy; i++) {
@@ -406,8 +401,7 @@ void main() {
       await runZoned(
         () async {
           backup.dispose();
-          storage.value!['enabled'] =
-              false;
+          storage.value!['enabled'] = false;
           backup = GitHubBackup(
             catalog: catalog,
             storage: storage,

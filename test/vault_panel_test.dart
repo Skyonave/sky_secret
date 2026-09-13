@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 
 import 'manager_window_test.dart' show FakeDesktop, FakeClipboard;
@@ -24,11 +24,9 @@ class ObservedStore extends VaultStore {
   Future<VaultSession>? opening;
   Future<void>? saving;
   @override
-  Future<VaultSession> create(String password, {String? name}) =>
-      opening = super.create(password, name: name);
+  Future<VaultSession> create(String password, {String? name}) => opening = super.create(password, name: name);
   @override
-  Future<VaultSession> unlock(String password) =>
-      opening = super.unlock(password);
+  Future<VaultSession> unlock(String password) => opening = super.unlock(password);
   @override
   Future<void> save(
     VaultSession session,
@@ -111,18 +109,12 @@ void main() {
         await open();
         await tap('add-entry');
         await tester.pumpAndSettle();
-        final generated = tester
-            .widget<TextField>(find.byKey(const Key('entry-password')))
-            .controller!
-            .text;
+        final generated = tester.widget<TextField>(find.byKey(const Key('entry-password'))).controller!.text;
         expect(generated.length, 24);
         await tester.tap(find.byKey(const Key('generate-entry-password')));
         await tester.pump();
         expect(
-          tester
-              .widget<TextField>(find.byKey(const Key('entry-password')))
-              .controller!
-              .text,
+          tester.widget<TextField>(find.byKey(const Key('entry-password'))).controller!.text,
           isNot(generated),
         );
         await tester.enterText(

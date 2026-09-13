@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'crypto/crypto.dart';
-import 'desktop/desktop_actions.dart';
-import 'desktop/sensitive_clipboard.dart';
-import 'desktop/sensitive_clipboard_boundary.dart';
-import 'desktop/vault_preferences.dart';
-import 'github/github_backup.dart';
+import 'core/crypto/crypto.dart';
+import 'core/desktop/desktop_actions.dart';
+import 'core/desktop/clipboard/sensitive_clipboard.dart';
+import 'core/desktop/clipboard/sensitive_clipboard_boundary.dart';
+import 'core/settings/vault_preferences.dart';
+import 'core/sync/github/github_backup.dart';
 import 'i18n/translations.g.dart';
 import 'ui/manager/manager_window.dart';
 import 'ui/shared/app_theme.dart';

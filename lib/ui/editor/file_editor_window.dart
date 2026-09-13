@@ -7,11 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../../desktop/file_editor_channel.dart';
-import '../../desktop/sensitive_clipboard_boundary.dart';
-import '../../files/text_document.dart';
+import '../../core/desktop/windows/file_editor_channel.dart';
+import '../../core/desktop/clipboard/sensitive_clipboard_boundary.dart';
+import '../../core/files/text_document.dart';
 import '../../i18n/translations.g.dart';
-import '../shared/sensitive_text_editing.dart';
+import '../shared/input/sensitive_text_editing.dart';
 
 Future<bool> runFileEditorIfNeeded({SensitiveClipboardBoundary? clipboardBoundary}) async {
   final controller = await WindowController.fromCurrentEngine();
@@ -110,7 +110,8 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
       );
       if (_closing || !mounted) return;
       if (!privacyApplied) {
-        _error = t.captureSettingFailed;
+        await _destroy();
+        return;
       }
       final data = await widget.channel.invokeMethod<Map>('read');
       if (data == null || _closing || !mounted) {

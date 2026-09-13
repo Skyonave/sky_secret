@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/desktop/sensitive_clipboard_boundary.dart';
+import 'package:skysecret/core/desktop/clipboard/sensitive_clipboard_boundary.dart';
 
 class _PlatformMessenger extends BinaryMessenger {
   final messages = <({String channel, ByteData? message})>[];

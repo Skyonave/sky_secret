@@ -6,9 +6,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:skysecret/app.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/desktop/desktop_controller.dart';
-import 'package:skysecret/desktop/shortcut_settings.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/os/windows/desktop_controller.dart';
+import 'package:skysecret/core/settings/shortcut_settings.dart';
 import 'package:skysecret/i18n/translations.g.dart';
 import 'package:window_manager/window_manager.dart';
 

@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/desktop/windows_instance.dart';
+import 'package:skysecret/core/os/windows/windows_instance.dart';
 
 void main() {
   test(
     'only first claimant owns instance; early and repeated activation works',
     () async {
-      final name =
-          'SkySecret.Test.$pid.${DateTime.now().microsecondsSinceEpoch}';
+      final name = 'SkySecret.Test.$pid.${DateTime.now().microsecondsSinceEpoch}';
       final primary = WindowsInstance(name: name);
       addTearDown(primary.dispose);
       expect(primary.isPrimary, isTrue);

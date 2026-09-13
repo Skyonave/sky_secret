@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/files/text_document.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/files/text_document.dart';
 
 import 'vault_sections_test.dart' show fixture;
 
@@ -48,8 +48,7 @@ void main() {
     expect(await file.readAsBytes(), source);
     final failing = VaultStore(
       file: file,
-      beforeCommit: () async =>
-          throw const FileSystemException('Synthetic failure'),
+      beforeCommit: () async => throw const FileSystemException('Synthetic failure'),
     );
     await expectLater(
       failing.save(session, session.entries),

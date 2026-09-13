@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
-import 'desktop/desktop_controller.dart';
-import 'desktop/sensitive_clipboard_boundary.dart';
-import 'desktop/windows_instance.dart';
-import 'github/github_backup.dart';
+import 'core/os/windows/desktop_controller.dart';
+import 'core/desktop/clipboard/sensitive_clipboard_boundary.dart';
+import 'core/os/windows/windows_instance.dart';
+import 'core/sync/github/github_backup.dart';
 import 'i18n/translations.g.dart';
 import 'ui/editor/file_editor_window.dart';
 

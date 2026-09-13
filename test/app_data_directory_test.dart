@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/storage/app_data_directory.dart';
+import 'package:skysecret/core/storage/app_data_directory.dart';
 
 void main() {
   late Directory root;
@@ -22,8 +22,7 @@ void main() {
     final legacy = await Directory(
       '${root.path}${Platform.pathSeparator}SecretManager',
     ).create();
-    final vault = await File('${legacy.path}/vault.smv')
-        .writeAsBytes([1, 2, 3]);
+    final vault = await File('${legacy.path}/vault.smv').writeAsBytes([1, 2, 3]);
     await Directory('${root.path}/SkySecret').create();
     expect(appDataDirectory(root: root.path).path, legacy.path);
     expect(await vault.readAsBytes(), [1, 2, 3]);

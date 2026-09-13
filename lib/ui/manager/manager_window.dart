@@ -4,20 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
-import '../../crypto/crypto.dart';
-import '../../desktop/desktop_actions.dart';
-import '../../desktop/sensitive_clipboard.dart';
-import '../../desktop/sensitive_clipboard_boundary.dart';
-import '../../desktop/shortcut_settings.dart';
-import '../../desktop/vault_preferences.dart';
-import '../../desktop/windows_sensitive_clipboard.dart';
-import '../../github/github_backup.dart';
+import '../../core/crypto/crypto.dart';
+import '../../core/desktop/desktop_actions.dart';
+import '../../core/desktop/clipboard/sensitive_clipboard.dart';
+import '../../core/desktop/clipboard/sensitive_clipboard_boundary.dart';
+import '../../core/settings/shortcut_settings.dart';
+import '../../core/settings/vault_preferences.dart';
+import '../../core/os/windows/windows_sensitive_clipboard.dart';
+import '../../core/sync/github/github_backup.dart';
 import '../../i18n/translations.g.dart';
 import '../github/github_dialog.dart';
 import '../settings/shortcut_dialog.dart';
 import '../shared/app_theme.dart';
 import '../shared/native_file_drop_target.dart';
-import '../shared/sensitive_text_editing.dart';
+import '../shared/input/sensitive_text_editing.dart';
 import '../vault/vault_panel.dart';
 
 part '_generator_panel.dart';
@@ -277,6 +277,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
                               Offstage(
                                 offstage: _page != 0,
                                 child: VaultPanel(
+                                  active: _page == 0,
                                   key: _vaultKey,
                                   store: widget.vaultStore,
                                   catalog: widget.vaultCatalog,
@@ -284,6 +285,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
                                   githubBackup: widget.githubBackup,
                                   copySecret: _copySecret,
                                   clearClipboard: _clearVaultClipboard,
+                                  onSearchDismissed: widget.desktop.hide,
                                   onSshAuthorizationChanged: widget.desktop.setSshAuthenticationPending,
                                 ),
                               ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
-import '../../desktop/desktop_actions.dart';
-import '../../desktop/shortcut_settings.dart';
+import '../../core/desktop/desktop_actions.dart';
+import '../../core/settings/shortcut_settings.dart';
 import '../../i18n/translations.g.dart';
 
 class ShortcutDialog extends StatefulWidget {

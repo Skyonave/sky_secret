@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
-import 'package:skysecret/github/github_api.dart';
-import 'package:skysecret/github/github_backup.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
+import 'package:skysecret/core/sync/github/github_api.dart';
+import 'package:skysecret/core/sync/github/github_backup.dart';
 
 import 'github_test.dart' show FakeGitHub, MemoryStorage, seed, syntheticPassword, syntheticToken;
 
@@ -119,6 +119,36 @@ void main() {
     ba.dispose();
     bb.dispose();
     await root.delete(recursive: true);
+  });
+
+  test('favorites, trash, restoration and permanent removal converge across devices', () async {
+    await a.legacy.store.save(sa, [sa.entries.first.inTrash(123), sa.entries.last]);
+    await rb.store.save(sb, [sb.entries.first.withFavorite(true), sb.entries.last]);
+    await syncA();
+    await syncB();
+    await syncA();
+    expect(ba.problem, isNull);
+    expect(bb.problem, isNull);
+    final deleted = sa.entries.firstWhere((entry) => entry.id == 'one');
+    expect(deleted.isDeleted, isTrue);
+    expect(deleted.isFavorite, isTrue);
+    expect(sb.entries.firstWhere((entry) => entry.id == 'one').isDeleted, isTrue);
+    final restored = VaultCollection(entries: sb.entries, folders: sb.folders)..restore('one');
+    await rb.store.save(sb, restored.entries);
+    await syncB();
+    await syncA();
+    expect(sa.entries.firstWhere((entry) => entry.id == 'one').isDeleted, isFalse);
+    final trash = VaultCollection(entries: sa.entries, folders: sa.folders)..delete('one', 456);
+    await a.legacy.store.save(sa, trash.entries);
+    await syncA();
+    await syncB();
+    final purged = VaultCollection(entries: sa.entries, folders: sa.folders)..purge('one');
+    await a.legacy.store.save(sa, purged.entries);
+    await syncA();
+    await syncB();
+    await syncA();
+    expect(sa.entries.map((entry) => entry.id), ['two']);
+    expect(sb.entries.map((entry) => entry.id), ['two']);
   });
 
   test(

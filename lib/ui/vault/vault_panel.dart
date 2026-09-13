@@ -5,35 +5,43 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
 
-import '../../crypto/crypto.dart';
-import '../../desktop/file_viewer_manager.dart';
-import '../../desktop/ssh_connections.dart';
-import '../../desktop/vault_preferences.dart';
-import '../../desktop/window_privacy.dart';
-import '../../files/text_document.dart';
-import '../../files/vault_file_import.dart';
-import '../../files/vault_text_file.dart';
-import '../../github/github_backup.dart';
+import '../../core/crypto/crypto.dart';
+import '../../core/desktop/windows/file_viewer_manager.dart';
+import '../../core/os/windows/ssh_connections.dart';
+import '../../core/settings/vault_preferences.dart';
+import '../../core/os/windows/window_privacy.dart';
+import '../../core/files/text_document.dart';
+import '../../core/files/vault_file_import.dart';
+import '../../core/files/vault_text_file.dart';
+import '../../core/sync/github/github_backup.dart';
 import '../../i18n/translations.g.dart';
 import '../github/github_dialog.dart';
+import '../search/vault_search_presenter.dart';
 import '../shared/inset_menu_item.dart';
-import '../shared/sensitive_text_editing.dart';
-import 'password_options_dialog.dart';
-import 'vault_name_dialog.dart';
-import 'vault_password_dialog.dart';
+import '../shared/input/sensitive_text_editing.dart';
+import 'dialogs/password_options_dialog.dart';
+import 'dialogs/vault_name_dialog.dart';
+import 'dialogs/vault_password_dialog.dart';
+import 'controllers/vault_entry_controller.dart';
+import 'controllers/vault_session_controller.dart';
+import 'controllers/vault_sync_controller.dart';
+import 'controllers/vault_browser_controller.dart';
 
-part '_vault_tree.dart';
-part '_vault_field.dart';
-part '_vault_entry_draft.dart';
-part '_vault_entry_editor.dart';
-part '_vault_header.dart';
-part '_vault_unlock_form.dart';
-part '_vault_preferences_dialog.dart';
-part '_vault_entry_card.dart';
-part '_vault_text_file_dialog.dart';
+part 'widgets/_vault_tree.dart';
+part 'widgets/_vault_browser.dart';
+part 'widgets/_vault_create_actions.dart';
+part 'widgets/_vault_field.dart';
+part 'widgets/_vault_entry_editor.dart';
+part 'widgets/_vault_header.dart';
+part 'widgets/_vault_unlock_form.dart';
+part 'dialogs/_vault_preferences_dialog.dart';
+part 'widgets/_vault_entry_card.dart';
+part 'dialogs/_vault_text_file_dialog.dart';
 
 class VaultPanel extends StatefulWidget {
+  final bool active;
   final VaultStore? store;
   final VaultCatalog? catalog;
   final VaultPreferences? preferences;
@@ -41,9 +49,11 @@ class VaultPanel extends StatefulWidget {
   final ValueChanged<bool>? onSshAuthorizationChanged;
   final Future<bool> Function(String) copySecret;
   final Future<void> Function() clearClipboard;
+  final Future<void> Function()? onSearchDismissed;
 
   const VaultPanel({
     super.key,
+    this.active = true,
     this.store,
     this.catalog,
     this.preferences,
@@ -51,6 +61,7 @@ class VaultPanel extends StatefulWidget {
     this.onSshAuthorizationChanged,
     required this.copySecret,
     required this.clearClipboard,
+    this.onSearchDismissed,
   });
 
   @override
@@ -58,30 +69,22 @@ class VaultPanel extends StatefulWidget {
 }
 
 class VaultPanelState extends State<VaultPanel> {
-  VaultStore? _store;
-  VaultCatalog? _catalog;
-  List<VaultReference> _vaults = [];
-  String? _selectedVaultId;
-  final _knownVaultNames = <String, String>{};
-  VaultSession? _session;
-  bool _exists = false;
+  late final VaultSessionController _lifecycle;
+  late final VaultSyncController _sync;
   bool _loading = true;
   bool _busy = false;
   bool _waitingForPassword = false;
-  bool _editing = false;
-  String? _editingId;
   String? _error;
   final _collapsedFolders = <String>{};
-  int _generationLength = 24;
-  bool _generationSymbols = true;
-  String? _entryFolderId;
   final _vaultName = TextEditingController();
   final _renameName = TextEditingController();
   bool _renamingVault = false;
   bool _renameInvalid = false;
   final _treeKey = GlobalKey<_VaultTreeState>();
-  final _generator = PasswordGenerator();
-  final _draft = _VaultEntryDraft();
+  final _editor = VaultEntryController();
+  final _browser = VaultBrowserController();
+  final _searchWindow = VaultSearchPresenter();
+  bool _searching = false;
   Timer? _idleTimer;
   Timer? _copyNoticeTimer;
   ({VaultSession session, String entryId})? _copyNotice;
@@ -91,12 +94,19 @@ class VaultPanelState extends State<VaultPanel> {
   bool _savingPreferences = false;
   final _master = TextEditingController();
   final _confirmation = TextEditingController();
-  bool _editingSsh = false;
   late final SshConnections _sshConnections;
   final _viewers = FileViewerManager();
-  int _securityEpoch = 0;
   static const _systemLock = MethodChannel('skysecret/system_lock');
   bool _sensitiveDialogOpen = false;
+
+  VaultStore? get _store => _lifecycle.store;
+  VaultCatalog? get _catalog => _lifecycle.catalog;
+  List<VaultReference> get _vaults => _lifecycle.vaults;
+  String? get _selectedVaultId => _lifecycle.selectedId;
+  Map<String, String> get _knownVaultNames => _lifecycle.names;
+  VaultSession? get _session => _lifecycle.session;
+  bool get _exists => _lifecycle.exists;
+  int get _securityEpoch => _lifecycle.epoch;
 
   Future<bool> _confirmSshHost(String prompt) async {
     if (!mounted || _session == null || _session!.isLocked || _sensitiveDialogOpen) {
@@ -138,7 +148,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> _connectSsh(VaultEntry entry) async {
     final session = _session;
-    if (_busy || session == null || session.isLocked) return;
+    if (_busy || session == null || session.isLocked || entry.isDeleted) return;
     try {
       await _sshConnections.start(_selectedVaultId ?? 'local', session, entry);
       if (mounted && _session == session && !session.isLocked) {
@@ -162,7 +172,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> synchronize(GitHubBackup backup) async {
     if (_busy || _loading || backup.busy) return;
-    if (_editing || _renamingVault || _viewers.hasOpenViewers) {
+    if (_editor.active || _renamingVault || _viewers.hasOpenViewers) {
       _notice(t.syncFinishEditing);
       return;
     }
@@ -180,17 +190,11 @@ class VaultPanelState extends State<VaultPanel> {
     _touchActivity();
     var openRemoteCopy = false;
     await _operation(() async {
-      await backup.synchronizeVault(
-        _selectedVaultId!,
-        _store!,
-        session,
-      );
+      final result = await _sync.synchronize(backup);
       if (!mounted || epoch != _securityEpoch || session.isLocked) return;
-      if (session.name != null) {
-        _knownVaultNames[_selectedVaultId!] = session.name!;
-      }
+      if (result == VaultSyncResult.unavailable) return;
       setState(() {});
-      final message = _synchronizationMessage(backup);
+      final message = _synchronizationMessage(backup, result);
       openRemoteCopy =
           await showDialog<bool>(
             context: context,
@@ -219,17 +223,18 @@ class VaultPanelState extends State<VaultPanel> {
     }
   }
 
-  String _synchronizationMessage(GitHubBackup backup) {
-    if (backup.syncKeyChanged) return t.syncKeyChanged;
-    if (backup.syncRollback) return t.syncRollback;
-    if (backup.problem case final problem?) return githubProblemLabel(problem);
-    if (_store!.snapshotCleanupPending) return t.vaultSnapshotCleanupWarning;
-    if (backup.mergedConflicts > 0) return t.syncConflicts(count: backup.mergedConflicts);
-    return t.syncDone;
-  }
+  String _synchronizationMessage(GitHubBackup backup, VaultSyncResult result) => switch (result) {
+    VaultSyncResult.keyChanged => t.syncKeyChanged,
+    VaultSyncResult.rollback => t.syncRollback,
+    VaultSyncResult.failed => backup.problem == null ? t.githubRestoreError : githubProblemLabel(backup.problem!),
+    VaultSyncResult.cleanupPending => t.vaultSnapshotCleanupWarning,
+    VaultSyncResult.conflicts => t.syncConflicts(count: backup.mergedConflicts),
+    VaultSyncResult.done => t.syncDone,
+    VaultSyncResult.unavailable => t.syncUnlock,
+  };
 
   Future<void> showGitHub(GitHubBackup backup, {bool restoreSeparately = false}) async {
-    if (_busy || _loading || _editing || _catalog == null) return;
+    if (_busy || _loading || _editor.active || _catalog == null) return;
     await _showGitHubDialog(backup, restoreSeparately: restoreSeparately);
   }
 
@@ -252,15 +257,17 @@ class VaultPanelState extends State<VaultPanel> {
                 if (!await _confirm(t.syncRelink, t.syncRelinkHelp) || !mounted || epoch != _securityEpoch) {
                   return false;
                 }
-                await backup.linkExistingVault(
-                  id,
-                  store,
-                  session,
-                  remote,
-                );
+                final linked = await _sync.link(backup, remote);
                 if (!mounted || epoch != _securityEpoch) return false;
-                if (backup.problem != null) {
-                  _notice(backup.syncKeyChanged ? t.syncKeyChanged : githubProblemLabel(backup.problem!));
+                if (linked == false) {
+                  final problem = backup.problem;
+                  _notice(
+                    backup.syncKeyChanged
+                        ? t.syncKeyChanged
+                        : problem == null
+                        ? t.syncUnlock
+                        : githubProblemLabel(problem),
+                  );
                   return false;
                 }
                 _notice(t.syncRelinkDone);
@@ -282,44 +289,17 @@ class VaultPanelState extends State<VaultPanel> {
           }
           var restored = false;
           await _operation(() async {
-            final target = _catalog!.newVault();
-            if (remote != null) {
-              await backup.bindSynchronizedImport(target.id, remote);
-            }
-            late VaultSession session;
-            try {
-              session = await target.store.importEncryptedSnapshot(
-                bytes,
-                passwords.password,
-                allowed: () => mounted && epoch == _securityEpoch,
-              );
-            } catch (_) {
-              if (remote != null && !await target.store.exists()) {
-                await backup.cancelSynchronizedImport(target.id);
-              }
-              rethrow;
-            }
-            if (!mounted || epoch != _securityEpoch) {
-              session.lock();
-              return;
-            }
-            _session?.lock();
+            if (await _sync.restore(backup, bytes, passwords.password, remote: remote) == false || !mounted) return;
+            _resetBrowser();
             _viewers.closeAll();
             unawaited(widget.clearClipboard());
             setState(() {
-              _session = session;
-              _store = target.store;
-              _selectedVaultId = target.id;
-              _vaults.add(target);
-              _exists = true;
               _master.clear();
               _confirmation.clear();
               _vaultName.clear();
               _clearEditor();
-              if (session.name != null) {
-                _knownVaultNames[target.id] = session.name!;
-              }
             });
+
             _touchActivity();
             restored = true;
           });
@@ -345,12 +325,13 @@ class VaultPanelState extends State<VaultPanel> {
       _session != null &&
       !_session!.isLocked &&
       !_busy &&
-      !_editing &&
+      !_editor.active &&
+      _browser.filtering == false &&
       (ModalRoute.of(context)?.isCurrent ?? true);
 
   String get fileDropHint => _session == null || _session!.isLocked
       ? t.vaultDropLocked
-      : (_busy || _editing || !(ModalRoute.of(context)?.isCurrent ?? true))
+      : (_busy || _editor.active || !(ModalRoute.of(context)?.isCurrent ?? true))
       ? t.vaultDropBusy
       : t.vaultDropHint;
 
@@ -380,7 +361,7 @@ class VaultPanelState extends State<VaultPanel> {
       }
       final organization = VaultOrganization(entries: session.entries, folders: session.folders);
       organization.appendEntries(entries, folderId);
-      await _store!.save(session, organization.entries, folders: organization.folders);
+      if (await _lifecycle.save(organization.entries, folders: organization.folders) == false) return;
       if (mounted && !session.isLocked && _session == session) {
         setState(() => _collapsedFolders.remove(folderId ?? ''));
         _notice(t.vaultFilesAdded(count: entries.length));
@@ -397,6 +378,7 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   void onWindowHidden() {
+    _searchWindow.close();
     if (!mounted || !_lockWhenHidden) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
     _lock();
@@ -405,6 +387,8 @@ class VaultPanelState extends State<VaultPanel> {
   @override
   void initState() {
     super.initState();
+    _lifecycle = VaultSessionController(store: widget.store, catalog: widget.catalog);
+    _sync = VaultSyncController(_lifecycle);
     _sshConnections = SshConnections(
       confirmHost: _confirmSshHost,
       onAuthorizationChanged: (pending) => widget.onSshAuthorizationChanged?.call(pending),
@@ -422,6 +406,12 @@ class VaultPanelState extends State<VaultPanel> {
     });
     unawaited(_checkSystemLock());
     unawaited(_load());
+  }
+
+  @override
+  void didUpdateWidget(VaultPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active == false) _searchWindow.close();
   }
 
   Future<void> _checkSystemLock() async {
@@ -503,31 +493,17 @@ class VaultPanelState extends State<VaultPanel> {
       if (!mounted || source == null || epoch != _securityEpoch) return;
       final passwords = await _passwordPrompt();
       if (!mounted || passwords == null || epoch != _securityEpoch) return;
-      final target = _catalog!.newVault();
-      final session = await target.store.importFrom(
-        File(source.path),
-        passwords.password,
-        allowed: () => mounted && epoch == _securityEpoch,
-      );
-      if (!mounted || epoch != _securityEpoch) {
-        session.lock();
-        return;
-      }
-      _session?.lock();
+      if (await _lifecycle.importFile(File(source.path), passwords.password) == false || !mounted) return;
+      _resetBrowser();
       _viewers.closeAll();
       unawaited(widget.clearClipboard());
       setState(() {
-        _session = session;
-        _store = target.store;
-        _selectedVaultId = target.id;
-        _vaults.add(target);
-        _exists = true;
         _master.clear();
         _confirmation.clear();
         _vaultName.clear();
         _clearEditor();
-        if (session.name != null) _knownVaultNames[target.id] = session.name!;
       });
+
       _touchActivity();
       _notice(t.vaultImportDone);
     });
@@ -560,19 +536,11 @@ class VaultPanelState extends State<VaultPanel> {
       if (!mounted || passwords == null || session.isLocked || _session != session) {
         return;
       }
-      final epoch = _securityEpoch;
-      final replacement = await _store!.changePassword(
-        session,
-        passwords.current,
-        passwords.password,
-      );
-      if (!mounted || epoch != _securityEpoch) {
-        replacement.lock();
-        return;
-      }
-      setState(() => _session = replacement);
+      if (await _lifecycle.changePassword(passwords.current, passwords.password) == false || !mounted) return;
+      setState(() {});
       _viewers.closeAll();
       unawaited(widget.clearClipboard());
+
       _touchActivity();
       _notice(_store!.snapshotCleanupPending ? t.vaultSnapshotCleanupWarning : t.vaultPasswordChanged);
     });
@@ -652,7 +620,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> _openFile(VaultEntry entry) async {
     final session = _session;
-    if (_busy || session == null || session.isLocked || !entry.isFile) return;
+    if (_busy || session == null || session.isLocked || !entry.isFile || entry.isDeleted) return;
     var original = entry.attachments.single;
     final bytes = original.bytes;
     final TextDocument? document;
@@ -675,7 +643,10 @@ class VaultPanelState extends State<VaultPanel> {
         encoding: readable.encoding,
         locale: LocaleSettings.currentLocale.languageCode,
         isValid: () =>
-            mounted && _session == session && !session.isLocked && session.entries.any((e) => e.id == entry.id),
+            mounted &&
+            _session == session &&
+            !session.isLocked &&
+            session.entries.any((e) => e.id == entry.id && e.isDeleted == false),
         activity: _touchActivity,
         copy: widget.copySecret,
         clearClipboard: widget.clearClipboard,
@@ -684,7 +655,10 @@ class VaultPanelState extends State<VaultPanel> {
             return false;
           }
           final current = session.entries.where((e) => e.id == entry.id).firstOrNull;
-          if (current == null || !current.isFile || !identical(current.attachments.single, original)) {
+          if (current == null ||
+              current.isDeleted ||
+              !current.isFile ||
+              !identical(current.attachments.single, original)) {
             return false;
           }
           try {
@@ -699,11 +673,15 @@ class VaultPanelState extends State<VaultPanel> {
             } finally {
               encoded.fillRange(0, encoded.length, 0);
             }
-            final replacement = VaultEntry.file(
-              updated,
-              id: current.id,
-              folderId: current.folderId,
-            ).withConflict(current.conflictOf).atPosition(current.folderId, current.order);
+            final replacement =
+                VaultEntry.file(
+                      updated,
+                      id: current.id,
+                      folderId: current.folderId,
+                    )
+                    .withFavorite(current.isFavorite)
+                    .withConflict(current.conflictOf)
+                    .atPosition(current.folderId, current.order);
             if (!await _persist(
               session.entries.map((e) => e.id == entry.id ? replacement : e).toList(),
             )) {
@@ -720,27 +698,17 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   Future<void> _load() async {
+    final epoch = _securityEpoch;
     try {
-      if (_store == null) {
-        if (widget.store != null) {
-          _store = widget.store;
-        } else {
-          _catalog = widget.catalog ?? VaultCatalog.local();
-          _vaults = await _catalog!.list();
-          if (_vaults.isEmpty) _vaults.add(_catalog!.legacy);
-          _selectedVaultId = _vaults.first.id;
-          _store = _vaults.first.store;
-        }
-      }
+      await _lifecycle.load();
+      if (!mounted || epoch != _securityEpoch) return;
       if (_preferences == null) {
         _preferences =
             widget.preferences ??
             VaultPreferences(
               file: _catalog == null
                   ? null
-                  : File(
-                      '${_catalog!.directory.path}${Platform.pathSeparator}vault_preferences.json',
-                    ),
+                  : File('${_catalog!.directory.path}${Platform.pathSeparator}vault_preferences.json'),
             );
         try {
           _autoLockEnabled = await _preferences!.loadAutoLock();
@@ -748,28 +716,20 @@ class VaultPanelState extends State<VaultPanel> {
         } catch (_) {
           _autoLockEnabled = true;
           _lockWhenHidden = true;
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(t.vaultPreferencesReadFailed)),
-            );
-          }
+          if (mounted) _notice(t.vaultPreferencesReadFailed);
         }
       }
-      final exists = await _store!.exists();
-      if (mounted) {
+      if (mounted && epoch == _securityEpoch) {
         setState(() {
-          _exists = exists;
           _loading = false;
           _error = null;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && epoch == _securityEpoch) {
         setState(() {
           _loading = false;
           _error = 'read';
-          _selectedVaultId = null;
-          _store = null;
         });
       }
     }
@@ -785,65 +745,78 @@ class VaultPanelState extends State<VaultPanel> {
       setState(() => _error = 'mismatch');
       return;
     }
-    if (!_exists && !MasterPasswordPolicy.accepts(_master.text)) {
-      setState(() => _error = 'password-policy');
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final epoch = _securityEpoch;
     final password = _master.text;
+    final name = _vaultName.text.trim();
     _master.clear();
     _confirmation.clear();
-    try {
-      final session = _exists
-          ? await _store!.unlock(password)
-          : await _store!.create(
-              password,
-              name: _vaultName.text.trim().isEmpty ? null : _vaultName.text.trim(),
-            );
-      if (!mounted || epoch != _securityEpoch) {
-        session.lock();
-        return;
-      }
-      setState(() {
-        _session = session;
-        _exists = true;
-        _vaultName.clear();
-        if (_selectedVaultId != null && session.name != null) {
-          _knownVaultNames[_selectedVaultId!] = session.name!;
-        }
-      });
+    await _operation(() async {
+      if (await _lifecycle.open(password, name: name.isEmpty ? null : name) == false || !mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      setState(_vaultName.clear);
       _touchActivity();
       if (_store!.snapshotCleanupPending) _notice(t.vaultSnapshotCleanupWarning);
-    } on MasterPasswordPolicyException {
-      if (mounted && epoch == _securityEpoch) {
-        setState(() => _error = 'password-policy');
-      }
-    } on MemoryProtectionException {
-      if (mounted && epoch == _securityEpoch) {
-        setState(() => _error = 'memory-protection');
-      }
-    } on VaultUnlockException {
-      if (mounted && epoch == _securityEpoch) setState(() => _error = 'unlock');
-    } on VaultFormatException {
-      if (mounted && epoch == _securityEpoch) setState(() => _error = 'format');
-    } on VaultConflictException {
-      if (!mounted || epoch != _securityEpoch) return;
-      await _load();
-      if (mounted) setState(() => _error = 'conflict');
-    } catch (_) {
-      if (mounted && epoch == _securityEpoch) setState(() => _error = 'io');
-    } finally {
-      if (mounted && epoch == _securityEpoch) setState(() => _busy = false);
-    }
+    });
   }
 
   bool _onKeyActivity(KeyEvent event) {
     _touchActivity();
+    if (widget.active == false || _session == null || _session!.isLocked || _busy || _editor.active || _renamingVault) {
+      return false;
+    }
+    if (event is KeyDownEvent && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      final keyboard = HardwareKeyboard.instance;
+      final focus = FocusManager.instance.primaryFocus?.context;
+      final editingText = focus?.findAncestorStateOfType<EditableTextState>() != null;
+      if (editingText || keyboard.isAltPressed || keyboard.isMetaPressed || keyboard.isShiftPressed) return false;
+      if (event.physicalKey == PhysicalKeyboardKey.keyF) {
+        unawaited(_startSearch());
+        return true;
+      }
+    }
     return false;
+  }
+
+  Future<void> _startSearch() async {
+    final session = _session;
+    if (session == null || session.isLocked || _busy || _editor.active || _renamingVault || _searching) return;
+    bool valid() => mounted && widget.active && _session == session && session.isLocked == false;
+    _searching = true;
+    try {
+      final id = await _searchWindow.open(
+        context: context,
+        isValid: valid,
+        find: (query) => _browser.suggestions(session, query),
+        activity: _touchActivity,
+        copy: widget.copySecret,
+        clearClipboard: widget.clearClipboard,
+        hide: () async => widget.onSearchDismissed?.call(),
+      );
+      if (valid() == false || _busy || _editor.active) return;
+      if (id == null) return;
+      final entry = session.entries.where((entry) => entry.id == id && entry.isDeleted == false).firstOrNull;
+      if (entry == null) return;
+      if (entry.isFile) {
+        await _openFile(entry);
+      } else if (entry.isSsh) {
+        await _connectSsh(entry);
+      } else if (entry.hasPassword) {
+        await _copyEntry(entry);
+      } else {
+        await windowManager.focus();
+        if (valid() == false || _busy || _editor.active) return;
+        _edit(entry);
+      }
+    } catch (_) {
+      if (valid()) _notice(t.searchUnavailable);
+    } finally {
+      _searching = false;
+    }
+  }
+
+  void _resetBrowser() {
+    _searchWindow.close();
+    _browser.clear();
+    ScaffoldMessenger.maybeOf(context)?.clearSnackBars();
   }
 
   void _onPointerActivity(PointerEvent event) => _touchActivity();
@@ -907,36 +880,17 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   Future<void> _selectVault(String? id) async {
-    if (_busy || _editing || _renamingVault || _catalog == null || id == _selectedVaultId) {
-      return;
-    }
+    if (_busy || _editor.active || _renamingVault || _catalog == null || id == _selectedVaultId) return;
     _lock();
-    _master.clear();
-    _confirmation.clear();
-    _vaultName.clear();
     setState(() => _loading = true);
     try {
-      _vaults = await _catalog!.list();
-      VaultReference? selected;
-      if (id == null) {
-        selected = _vaults.isEmpty ? _catalog!.legacy : _catalog!.newVault();
-        _vaults.add(selected);
-      } else {
-        selected = _vaults.where((v) => v.id == id).firstOrNull;
-      }
-      if (selected == null) {
-        throw StateError('Selected vault is unavailable');
-      }
-      _selectedVaultId = selected.id;
-      _store = selected.store;
-      await _load();
+      await _lifecycle.select(id);
+      if (mounted) setState(() => _loading = false);
     } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
           _error = 'read';
-          _selectedVaultId = null;
-          _store = null;
         });
       }
     }
@@ -954,7 +908,7 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   Future<void> _showHistory() async {
-    if (_busy || _editing || _catalog == null) return;
+    if (_busy || _editor.active || _catalog == null) return;
     late List<({VaultReference vault, File file, DateTime date})> snapshots;
     try {
       snapshots = await _catalog!.history();
@@ -1016,7 +970,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> _showConflicts() async {
     final session = _session;
-    if (_busy || _editing || session == null || session.isLocked) return;
+    if (_busy || _editor.active || session == null || session.isLocked) return;
     final epoch = _securityEpoch;
     final variants = session.entries.where((e) => e.conflictOf != null).toList();
     final revealed = <String>{};
@@ -1052,7 +1006,9 @@ class VaultPanelState extends State<VaultPanel> {
                                   ),
                                   tilePadding: const EdgeInsets.all(12),
                                   childrenPadding: const EdgeInsets.all(12),
-                                  title: Text(entry.title),
+                                  title: Text(
+                                    entry.isDeleted ? '${entry.title} · ${t.browserMovedToTrash}' : entry.title,
+                                  ),
                                   subtitle: Text(
                                     t.syncVariant(
                                       id: entry.id.substring(
@@ -1143,7 +1099,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> _deleteVault() async {
     final store = _store;
-    if (_busy || _editing || _renamingVault || !_exists || store == null) {
+    if (_busy || _editor.active || _renamingVault || !_exists || store == null) {
       return;
     }
     final epoch = _securityEpoch;
@@ -1161,22 +1117,12 @@ class VaultPanelState extends State<VaultPanel> {
       return;
     }
     _lock();
-    final deletionEpoch = _securityEpoch;
     await _operation(() async {
-      await store.delete(
-        allowed: () => mounted && deletionEpoch == _securityEpoch && _store == store,
-      );
-      if (!mounted || _store != store) return;
-      setState(() {
-        _knownVaultNames.remove(id);
-        _store = null;
-        _selectedVaultId = null;
-        _vaults = [];
-        _exists = false;
-        _loading = true;
-      });
-      await _load();
-      if (mounted) _notice(t.vaultDeleted);
+      await _lifecycle.deleteSelected();
+      if (mounted) {
+        setState(() => _loading = false);
+        _notice(t.vaultDeleted);
+      }
     });
   }
 
@@ -1187,31 +1133,31 @@ class VaultPanelState extends State<VaultPanel> {
   Widget _folderSelector(VaultSession session) => LayoutBuilder(
     builder: (context, constraints) {
       final selectedName = session.folders
-          .where((folder) => folder.id == _entryFolderId)
+          .where((folder) => folder.id == _editor.folderId)
           .map((folder) => _locationName(session, folder))
           .firstOrNull;
       return PopupMenuButton<String>(
-        key: ValueKey('entry-folder-${_editingId ?? 'new'}'),
+        key: ValueKey('entry-folder-${_editor.id ?? 'new'}'),
         enabled: !_busy,
         tooltip: t.vaultLocation,
         position: PopupMenuPosition.under,
         offset: const Offset(0, 6),
         borderRadius: BorderRadius.circular(12),
         constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
-        onSelected: (value) => setState(() => _entryFolderId = value.isEmpty ? null : value),
+        onSelected: (value) => setState(() => _editor.folderId = value.isEmpty ? null : value),
         itemBuilder: (context) => [
           InsetMenuItem(
             value: '',
             label: t.vaultRoot,
             icon: Icons.folder_outlined,
-            selected: _entryFolderId == null,
+            selected: _editor.folderId == null,
           ),
           for (final folder in session.folders)
             InsetMenuItem(
               value: folder.id,
               label: _locationName(session, folder),
               icon: Icons.folder_outlined,
-              selected: _entryFolderId == folder.id,
+              selected: _editor.folderId == folder.id,
             ),
         ],
         child: InputDecorator(
@@ -1284,13 +1230,13 @@ class VaultPanelState extends State<VaultPanel> {
         label: t.vaultHistory,
         icon: Icons.history_rounded,
       ),
-      if (_session != null && !_editing)
+      if (_session != null && !_editor.active)
         InsetMenuItem(
           value: 'conflicts',
           label: t.syncReviewConflicts,
           icon: Icons.difference_outlined,
         ),
-      if (_exists && !_editing && !_renamingVault) ...[
+      if (_exists && !_editor.active && !_renamingVault) ...[
         const PopupMenuDivider(),
         InsetMenuItem(
           key: const Key('delete-vault'),
@@ -1303,13 +1249,7 @@ class VaultPanelState extends State<VaultPanel> {
     ],
   );
 
-  void _clearEditor() {
-    _draft.clear();
-    _editingSsh = false;
-    _editingId = null;
-    _entryFolderId = null;
-    _editing = false;
-  }
+  void _clearEditor() => _editor.clear();
 
   void _edit([
     VaultEntry? entry,
@@ -1317,25 +1257,7 @@ class VaultPanelState extends State<VaultPanel> {
     bool ssh = false,
   ]) => setState(() {
     _error = null;
-    _editingId = entry?.id;
-    _editingSsh = entry?.isSsh ?? ssh;
-    _draft.sshHost.text = entry?.ssh?.host ?? '';
-    _draft.sshPort.text = (entry?.ssh?.port ?? 22).toString();
-    _draft.title.text = entry?.title ?? '';
-    _draft.username.text = entry?.username ?? '';
-    _draft.password.text =
-        entry?.password ??
-        _generator.generate(
-          length: _generationLength,
-          symbols: _generationSymbols,
-        );
-    if (entry != null && entry.password.isNotEmpty) {
-      _generationLength = entry.password.characters.length.clamp(12, 64);
-    }
-    if (_editingSsh && entry == null) _draft.password.clear();
-    _draft.notes.text = entry?.notes ?? '';
-    _entryFolderId = entry != null ? entry.folderId : folderId;
-    _editing = true;
+    _editor.start(entry: entry, parentId: folderId, ssh: ssh);
   });
 
   Future<void> _passwordOptions() async {
@@ -1343,19 +1265,16 @@ class VaultPanelState extends State<VaultPanel> {
     final options = await showDialog<PasswordOptions>(
       context: context,
       builder: (_) => PasswordOptionsDialog(
-        options: (length: _generationLength, symbols: _generationSymbols),
+        options: (length: _editor.generationLength, symbols: _editor.generationSymbols),
       ),
     );
-    if (!mounted || options == null || !_editing || _session == null || _busy) {
+    if (!mounted || options == null || !_editor.active || _session == null || _busy) {
       return;
     }
     setState(() {
-      _generationLength = options.length;
-      _generationSymbols = options.symbols;
-      _draft.password.text = _generator.generate(
-        length: _generationLength,
-        symbols: _generationSymbols,
-      );
+      _editor.generationLength = options.length;
+      _editor.generationSymbols = options.symbols;
+      _editor.generate();
     });
   }
 
@@ -1368,59 +1287,19 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   Future<void> _saveEntry() async {
-    if (_busy) return;
-    if (_draft.title.text.trim().isEmpty) {
-      setState(() => _error = 'title');
-      return;
-    }
-    SshEndpoint? endpoint;
-    if (_editingSsh) {
-      endpoint = SshEndpoint(
-        host: _draft.sshHost.text.trim().toLowerCase(),
-        port: int.tryParse(_draft.sshPort.text) ?? 0,
-      );
-      if (!endpoint.isValid ||
-          !SshEndpoint.validUsername(_draft.username.text) ||
-          !SshEndpoint.validPassword(_draft.password.text)) {
-        setState(() => _error = 'ssh-invalid');
-        return;
+    final session = _session;
+    if (_busy || session == null) return;
+    try {
+      final organization = _editor.prepare(session);
+      final folderId = _editor.folderId;
+      if (await _persist(organization.entries, folders: organization.folders) && mounted) {
+        setState(() {
+          _collapsedFolders.remove(folderId ?? '');
+          _clearEditor();
+        });
       }
-    }
-    final session = _session!;
-    final entry = _editingId == null
-        ? VaultEntry.create(
-            title: _draft.title.text,
-            username: _draft.username.text,
-            password: _draft.password.text,
-            notes: _draft.notes.text,
-            folderId: _entryFolderId,
-            ssh: endpoint,
-          )
-        : VaultEntry(
-            id: _editingId!,
-            kind: _editingSsh ? VaultEntryKind.ssh : VaultEntryKind.text,
-            title: _draft.title.text,
-            username: _draft.username.text,
-            password: _draft.password.text,
-            notes: _draft.notes.text,
-            folderId: _entryFolderId,
-            ssh: endpoint,
-          );
-    final organization = VaultOrganization(entries: session.entries, folders: session.folders);
-    final entries = organization.entries;
-    final index = entries.indexWhere((e) => e.id == entry.id);
-    if (index < 0) {
-      organization.appendEntries([entry], entry.folderId);
-    } else {
-      final previous = entries[index];
-      entries[index] = entry.withConflict(previous.conflictOf).atPosition(entry.folderId, previous.order);
-      if (previous.folderId != entry.folderId) organization.move(VaultItem.entry(entry), entry.folderId);
-    }
-    if (await _persist(entries, folders: organization.folders) && mounted) {
-      setState(() {
-        _collapsedFolders.remove(entry.folderId ?? '');
-        _clearEditor();
-      });
+    } on EntryValidationException catch (error) {
+      if (mounted) setState(() => _error = error.code);
     }
   }
 
@@ -1436,11 +1315,8 @@ class VaultPanelState extends State<VaultPanel> {
       _error = null;
     });
     try {
-      await _store!.save(session, entries, folders: folders, name: name);
+      if (await _lifecycle.save(entries, folders: folders, name: name) == false) return false;
       if (!mounted || _session != session || session.isLocked) return false;
-      if (_selectedVaultId != null && session.name != null) {
-        _knownVaultNames[_selectedVaultId!] = session.name!;
-      }
       return true;
     } on VaultConflictException {
       if (mounted && _session == session) setState(() => _error = 'conflict');
@@ -1484,26 +1360,79 @@ class VaultPanelState extends State<VaultPanel> {
       ) ??
       false;
 
-  Future<void> _deleteEntry(VaultEntry entry) async {
-    if (_busy) return;
+  VaultCollection _collection(VaultSession session) =>
+      VaultCollection(entries: session.entries, folders: session.folders);
+
+  Future<void> _favoriteEntry(VaultEntry entry) async {
     final session = _session;
-    if (!await _confirm(
-          entry.isFile ? t.vaultDeleteFile : t.vaultDeleteEntry,
-          t.vaultDeleteEntryQuestion(name: entry.title),
-        ) ||
-        !mounted ||
-        session != _session ||
-        session == null ||
-        session.isLocked) {
-      return;
+    if (_busy || session == null || session.isLocked || entry.isDeleted) return;
+    final collection = _collection(session);
+    if (collection.favorite(entry.id, entry.isFavorite == false)) await _persist(collection.entries);
+  }
+
+  Future<void> _deleteEntry(VaultEntry entry) async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked || entry.isDeleted) return;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final collection = _collection(session);
+    if (collection.delete(entry.id, timestamp) == false) return;
+    final id = entry.id;
+    if (await _persist(collection.entries) == false) return;
+    _viewers.close(id);
+    _sshConnections.revoke();
+    await widget.clearClipboard();
+    if (!mounted || _session != session || session.isLocked) return;
+    if (_editor.id == id) setState(_clearEditor);
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(t.browserMovedToTrash),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: t.browserUndo,
+            onPressed: () => unawaited(_restoreEntry(id, expectedSession: session, deletedAt: timestamp)),
+          ),
+        ),
+      );
+  }
+
+  Future<void> _restoreEntry(String id, {VaultSession? expectedSession, int? deletedAt}) async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked) return;
+    if (expectedSession != null && expectedSession != session) return;
+    final collection = _collection(session);
+    final entry = collection.find(id);
+    if (entry == null || entry.isDeleted == false) return;
+    if (deletedAt != null && entry.deletedAt != deletedAt) return;
+    if (collection.restore(id) && await _persist(collection.entries)) {
+      if (mounted && _session == session && session.isLocked == false) _notice(t.browserRestored);
     }
-    if (await _persist(
-      session.entries.where((e) => e.id != entry.id).toList(),
-    )) {
-      _viewers.close(entry.id);
-      await widget.clearClipboard();
-      if (mounted && _editingId == entry.id) setState(_clearEditor);
+  }
+
+  Future<void> _purgeEntry(VaultEntry entry) async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked || entry.isDeleted == false) return;
+    if (await _confirm(t.browserDeleteForever, t.browserDeleteForeverHelp(name: entry.title)) == false) return;
+    if (!mounted || _session != session || session.isLocked || _busy) return;
+    final collection = _collection(session);
+    if (identical(collection.find(entry.id), entry) == false) return;
+    if (collection.purge(entry.id)) await _persist(collection.entries);
+  }
+
+  Future<void> _emptyTrash() async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked) return;
+    final removed = _collection(session).trash;
+    if (removed.isEmpty) return;
+    if (await _confirm(t.browserEmptyTrash, t.browserEmptyTrashHelp(count: removed.length)) == false) return;
+    if (!mounted || _session != session || session.isLocked || _busy) return;
+    final collection = _collection(session);
+    if (removed.every((entry) => identical(collection.find(entry.id), entry)) == false) return;
+    for (final entry in removed) {
+      collection.purge(entry.id);
     }
+    await _persist(collection.entries);
   }
 
   void _startRenameVault() {
@@ -1631,13 +1560,14 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   void _lock() {
+    _resetBrowser();
     _sshConnections.revoke();
     if (_sensitiveDialogOpen && mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
       _sensitiveDialogOpen = false;
     }
     _viewers.closeAll();
-    _securityEpoch++;
+    _lifecycle.lock();
     _master.clear();
     _confirmation.clear();
     _vaultName.clear();
@@ -1645,32 +1575,33 @@ class VaultPanelState extends State<VaultPanel> {
     _copyNoticeTimer?.cancel();
     _copyNotice = null;
     _treeKey.currentState?.stopDragging();
-    _session?.lock();
     unawaited(widget.clearClipboard());
     setState(() {
-      _session = null;
       _busy = false;
+      _loading = false;
       _clearEditor();
       _error = null;
       _collapsedFolders.clear();
       _renamingVault = false;
       _renameName.clear();
     });
+    if (_store == null) unawaited(_load());
   }
 
   @override
   void dispose() {
+    _searchWindow.dispose();
+    _browser.clear();
     _sshConnections.dispose();
     _copyNoticeTimer?.cancel();
     _copyNotice = null;
     _viewers.closeAll();
-    _securityEpoch++;
+    _lifecycle.lock();
     _systemLock.setMethodCallHandler(null);
     _idleTimer?.cancel();
     HardwareKeyboard.instance.removeHandler(_onKeyActivity);
     GestureBinding.instance.pointerRouter.removeGlobalRoute(_onPointerActivity);
     _treeKey.currentState?.stopDragging();
-    _session?.lock();
     for (final controller in [
       _master,
       _vaultName,
@@ -1680,7 +1611,8 @@ class VaultPanelState extends State<VaultPanel> {
       controller.clear();
       controller.dispose();
     }
-    _draft.dispose();
+    _editor.dispose();
+    _lifecycle.dispose();
     super.dispose();
   }
 
@@ -1717,7 +1649,7 @@ class VaultPanelState extends State<VaultPanel> {
 
   Future<void> _copyEntry(VaultEntry entry) async {
     final session = _session;
-    if (session == null || session.isLocked || _busy) return;
+    if (session == null || session.isLocked || _busy || entry.isDeleted) return;
     final copied = await widget.copySecret(entry.password);
     if (mounted && copied && _session == session && !session.isLocked) {
       _copyNoticeTimer?.cancel();
@@ -1733,7 +1665,7 @@ class VaultPanelState extends State<VaultPanel> {
       entry: entry,
       copied: _copyNotice == (session: _session, entryId: entry.id),
       key: ValueKey('entry-card-${entry.id}'),
-      onTap: _busy
+      onTap: _busy || entry.isDeleted
           ? null
           : entry.isFile
           ? () => _openFile(entry)
@@ -1745,39 +1677,65 @@ class VaultPanelState extends State<VaultPanel> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (entry.isDeleted == false) ...[
+            IconButton(
+              tooltip: entry.isFavorite ? t.browserUnfavorite : t.browserFavorite,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              padding: const EdgeInsets.all(8),
+              onPressed: _busy ? null : () => _favoriteEntry(entry),
+              icon: Icon(entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded, size: 18),
+            ),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             key: ValueKey(
               '${entry.isFile ? 'export-file' : 'edit-entry'}-${entry.id}',
             ),
-            tooltip: entry.isFile ? t.vaultSaveAttachment : t.vaultEditEntry,
+            tooltip: entry.isDeleted
+                ? t.browserRestore
+                : entry.isFile
+                ? t.vaultSaveAttachment
+                : t.vaultEditEntry,
             constraints: const BoxConstraints.tightFor(width: 36, height: 36),
             visualDensity: VisualDensity.standard,
             padding: const EdgeInsets.all(8),
             onPressed: _busy
                 ? null
+                : entry.isDeleted
+                ? () => _restoreEntry(entry.id)
                 : entry.isFile
                 ? () => _extractAttachment(entry.attachments.single)
                 : () => _edit(entry),
             icon: Icon(
-              entry.isFile ? Icons.save_alt_rounded : Icons.edit_outlined,
+              entry.isDeleted
+                  ? Icons.restore_rounded
+                  : entry.isFile
+                  ? Icons.save_alt_rounded
+                  : Icons.edit_outlined,
               size: 18,
             ),
           ),
           const SizedBox(width: 4),
           IconButton(
             key: ValueKey('delete-entry-${entry.id}'),
-            tooltip: entry.isFile ? t.vaultDeleteFile : t.vaultDeleteEntry,
+            tooltip: entry.isDeleted
+                ? t.browserDeleteForever
+                : entry.isFile
+                ? t.vaultDeleteFile
+                : t.vaultDeleteEntry,
             constraints: const BoxConstraints.tightFor(width: 36, height: 36),
             visualDensity: VisualDensity.standard,
             padding: const EdgeInsets.all(8),
-            onPressed: _busy ? null : () => _deleteEntry(entry),
+            onPressed: _busy ? null : () => entry.isDeleted ? _purgeEntry(entry) : _deleteEntry(entry),
             icon: const Icon(Icons.delete_outline_rounded, size: 18),
           ),
         ],
       ),
     );
     return Tooltip(
-      message: entry.isFile
+      message: entry.isDeleted
+          ? t.browserTrashHelp
+          : entry.isFile
           ? t.vaultFileHint
           : entry.isSsh
           ? t.sshConnect
@@ -1812,8 +1770,10 @@ class VaultPanelState extends State<VaultPanel> {
               busy: _busy,
               renameInvalid: _renameInvalid,
               savingPreferences: _savingPreferences,
-              showSettings: _editing == false && _renamingVault == false,
-              switcher: _catalog != null && _editing == false && _renamingVault == false ? _vaultSwitcher() : null,
+              showSettings: _editor.active == false && _renamingVault == false,
+              switcher: _catalog != null && _editor.active == false && _renamingVault == false
+                  ? _vaultSwitcher()
+                  : null,
               onRename: _renameVault,
               onStartRename: _startRenameVault,
               onCancelRename: () => setState(() {
@@ -1836,74 +1796,46 @@ class VaultPanelState extends State<VaultPanel> {
                 confirmation: _confirmation,
                 onOpen: _open,
               ),
-            ] else if (_editing) ...[
+            ] else if (_editor.active) ...[
               _VaultEntryEditor(
-                draft: _draft,
+                draft: _editor,
                 busy: _busy,
-                isSsh: _editingSsh,
+                isSsh: _editor.isSsh,
                 locationSelector: _folderSelector(session),
                 onSave: _save,
                 onCancel: () => setState(() {
                   _clearEditor();
                   _error = null;
                 }),
-                onDelete: _editingId == null
+                onDelete: _editor.id == null
                     ? null
                     : () => _deleteEntry(
-                        session.entries.firstWhere((entry) => entry.id == _editingId),
+                        session.entries.firstWhere((entry) => entry.id == _editor.id),
                       ),
                 onPasswordOptions: _passwordOptions,
                 onGenerate: () => setState(() {
-                  _draft.password.text = _generator.generate(length: _generationLength, symbols: _generationSymbols);
+                  _editor.generate();
                 }),
               ),
             ] else ...[
-              _folderTree(session),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                key: const Key('add-entry'),
-                onPressed: _busy ? null : () => _edit(),
-                icon: const Icon(Icons.add_rounded),
-                label: Text(t.vaultAddEntry),
+              _VaultBrowser(
+                session: session,
+                browser: _browser,
+                busy: _busy,
+                onSearch: _startSearch,
+                onView: (view) => setState(() => _browser.view = view),
+                onEmptyTrash: _emptyTrash,
+                tree: _folderTree(session),
+                entryCard: _entryCard,
               ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('add-ssh'),
-                onPressed: _busy ? null : () => _edit(null, null, true),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              if (_browser.view != VaultView.trash)
+                _VaultCreateActions(
+                  busy: _busy,
+                  onEntry: () => _edit(),
+                  onSsh: () => _edit(null, null, true),
+                  onFile: _addFile,
+                  onTextFile: _createTextFile,
                 ),
-                icon: const Icon(Icons.terminal_rounded, size: 20),
-                label: Text(t.sshAdd),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('add-file'),
-                onPressed: _busy ? null : _addFile,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.upload_file_outlined, size: 20),
-                label: Text(t.vaultAddFile),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('new-text-file'),
-                onPressed: _busy ? null : _createTextFile,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.note_add_outlined, size: 20),
-                label: Text(t.vaultCreateTextFile),
-              ),
               const SizedBox(height: 12),
               Text(
                 widget.githubBackup?.signedIn == true ? _vaultSyncHelp() : t.vaultLocalOnly,

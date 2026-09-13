@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/ui/shared/sensitive_text_transfer.dart';
+import 'package:skysecret/ui/shared/input/sensitive_text_transfer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

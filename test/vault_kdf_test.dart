@@ -19,9 +19,7 @@ void main() {
     ).deriveKey(secretKey: input, nonce: List.generate(16, (i) => i));
     try {
       expect(
-        (await key.extractBytes())
-            .map((v) => v.toRadixString(16).padLeft(2, '0'))
-            .join(),
+        (await key.extractBytes()).map((v) => v.toRadixString(16).padLeft(2, '0')).join(),
         '4d658e076fd7efa8440955c2cf1d1877da19d556d9768afff508405b764afa62',
       );
     } finally {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:skysecret/crypto/crypto.dart';
+import 'package:skysecret/core/crypto/crypto.dart';
 
 void main() {
   final generator = PasswordGenerator();
@@ -7,9 +7,7 @@ void main() {
     for (final length in [12, 24, 64]) {
       for (final symbols in [false, true]) {
         final allowed =
-            PasswordGenerator.letters +
-            PasswordGenerator.digits +
-            (symbols ? PasswordGenerator.punctuation : '');
+            PasswordGenerator.letters + PasswordGenerator.digits + (symbols ? PasswordGenerator.punctuation : '');
         for (var i = 0; i < 50; i++) {
           final password = generator.generate(length: length, symbols: symbols);
           expect(password.length, length);
