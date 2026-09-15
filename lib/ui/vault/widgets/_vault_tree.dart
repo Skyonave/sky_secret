@@ -19,7 +19,10 @@ class _VaultInsertion {
 class _VaultTree extends StatefulWidget {
   final VaultSession session;
   final bool busy;
+  final Set<String> pendingIds;
+  final List<VaultEntry> pendingEntries;
   final Set<String> collapsed;
+  final VoidCallback onCollapsedChanged;
   final Widget Function(VaultEntry) entryCard;
   final void Function(String?) createFolder;
   final void Function(VaultFolder) renameFolder;
@@ -35,7 +38,10 @@ class _VaultTree extends StatefulWidget {
     super.key,
     required this.session,
     required this.busy,
+    required this.pendingIds,
+    required this.pendingEntries,
     required this.collapsed,
+    required this.onCollapsedChanged,
     required this.entryCard,
     required this.createFolder,
     required this.renameFolder,
@@ -67,7 +73,11 @@ class _VaultTreeState extends State<_VaultTree> {
   double _dragHeight = 56;
 
   VaultOrganization get _organization => VaultOrganization(
-    entries: widget.session.entries.where((entry) => entry.isDeleted == false).toList(),
+    entries: [...widget.session.entries, ...widget.pendingEntries]
+        .where(
+          (entry) => (entry.isDeleted == false || widget.pendingIds.contains(entry.id)) && entry.isFavorite == false,
+        )
+        .toList(),
     folders: widget.session.folders,
   );
 
@@ -103,6 +113,7 @@ class _VaultTreeState extends State<_VaultTree> {
     _expandTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted && !widget.busy && !widget.session.isLocked) {
         setState(() => widget.collapsed.remove(id));
+        widget.onCollapsedChanged();
       }
     });
   }
@@ -272,7 +283,7 @@ class _VaultTreeState extends State<_VaultTree> {
     builder: (context, constraints) => Draggable<_VaultDrag>(
       key: ValueKey('drag-${item.key}'),
       data: _VaultDrag(widget.session, item),
-      maxSimultaneousDrags: widget.busy ? 0 : 1,
+      maxSimultaneousDrags: widget.busy || widget.pendingIds.contains(item.entry?.id) ? 0 : 1,
       dragAnchorStrategy: (draggable, context, position) {
         _grabOffset = childDragAnchorStrategy(draggable, context, position);
         _dragHeight = context.size!.height;
@@ -435,6 +446,7 @@ class _VaultTreeState extends State<_VaultTree> {
                         } else {
                           widget.collapsed.remove(folder.id);
                         }
+                        widget.onCollapsedChanged();
                       }),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -455,16 +467,6 @@ class _VaultTreeState extends State<_VaultTree> {
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
-          PopupMenuButton<String>(
-            key: ValueKey('folder-actions-${folder.id}'),
-            enabled: !widget.busy,
-            tooltip: t.vaultLocationActions,
-            padding: const EdgeInsets.all(10),
-            iconSize: 20,
-            itemBuilder: (_) => _menu(folder),
-            onSelected: (action) => _action(action, folder),
           ),
         ],
       ),

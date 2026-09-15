@@ -35,6 +35,7 @@ bool FlutterWindow::OnCreate() {
   });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
   companion_ = std::make_unique<CompanionWindow>(GetHandle());
+  search_companion_ = std::make_unique<CompanionWindow>(GetHandle());
   companion_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "skysecret/companion",
       &flutter::StandardMethodCodec::GetInstance());
@@ -52,7 +53,7 @@ bool FlutterWindow::OnCreate() {
           {flutter::EncodableValue("width"), flutter::EncodableValue((bounds->right - bounds->left) / scale)},
           {flutter::EncodableValue("height"), flutter::EncodableValue((bounds->bottom - bounds->top) / scale)},
       }));
-    } else if (call.method_name() == "place") {
+    } else if (call.method_name() == "place" || call.method_name() == "placeSearch") {
       const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
       if (!args || args->count(flutter::EncodableValue("window")) == 0 ||
           args->count(flutter::EncodableValue("gap")) == 0) {
@@ -62,8 +63,13 @@ bool FlutterWindow::OnCreate() {
       const auto& id = args->at(flutter::EncodableValue("window"));
       const auto* gap = std::get_if<double>(&args->at(flutter::EncodableValue("gap")));
       const bool integer = std::holds_alternative<int32_t>(id) || std::holds_alternative<int64_t>(id);
+      const bool search = call.method_name() == "placeSearch";
+      auto* target = search ? search_companion_.get() : companion_.get();
       result->Success(flutter::EncodableValue(integer && gap &&
-          companion_->Place(reinterpret_cast<HWND>(id.LongValue()), *gap)));
+          target->Place(reinterpret_cast<HWND>(id.LongValue()), *gap, search)));
+    } else if (call.method_name() == "detachSearch") {
+      search_companion_->Detach();
+      result->Success();
     } else if (call.method_name() == "detach") {
       companion_->Detach();
       result->Success();
@@ -117,8 +123,10 @@ bool FlutterWindow::OnCreate() {
 
 void FlutterWindow::OnDestroy() {
   if (companion_) companion_->Detach();
+  if (search_companion_) search_companion_->Detach();
   companion_channel_.reset();
   companion_.reset();
+  search_companion_.reset();
   ssh_bridge_.reset();
   if (file_drop_) {
     file_drop_->Stop();
@@ -147,6 +155,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     return 0;
   }
   if (companion_) companion_->OnMessage(message, wparam, lparam);
+  if (search_companion_) search_companion_->OnMessage(message, wparam, lparam);
   if (message == WM_SHOWWINDOW && !wparam && file_drop_) {
 
     file_drop_->DragLeave();

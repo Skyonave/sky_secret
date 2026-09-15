@@ -18,6 +18,12 @@ The file editor receives document contents only after Windows confirms the confi
 
 Version **0.3.1** saves payload schema 8. Favorites and trash metadata are encrypted with each entry; opening an older vault alone does not rewrite it. Update all devices before saving with 0.3.1: earlier applications reject schema 8. Trash counts toward existing entry and attachment limits, has no automatic expiry, and is included in encrypted exports and sync. Permanent removal affects the current vault; recovery history and external backups may retain copies. Search reads only the unlocked vault's titles, usernames, SSH hosts and folder names, without indexing passwords, notes or file contents on disk.
 
+## Window access and deletion in 0.3.6
+
+Reopening a text editor checks access before and after showing its window; revoked editors are closed. A late search activation cannot close a newer search session. These checks complement vault locking and clipboard revocation.
+
+New deletions remove the entry from the current saved vault immediately. Undo keeps a protected reference in the unlocked session for 10 seconds; locking, switching vaults, synchronization or password changes end that opportunity. Previously stored trash remains in the encrypted vault. Recovery history and external backups may retain deleted data. Existing vault formats and TOTP fields remain readable and are preserved when saved.
+
 ## Changing a compromised password
 
 A password change generates a fresh data key and removes managed local recovery history and sync caches after the new vault commits. An interrupted or failed cleanup leaves a retry marker and a visible warning; close software holding the snapshots and reopen the vault to retry. Ordinary edits resume local recovery history under the new key.
@@ -55,6 +61,10 @@ Both commands must succeed. Extract the verified inner ZIP to inspect its build 
 В **0.2.0** новые мастер-пароли требуют 16 символов; подходят длинные уникальные фразы без обязательных цифр, регистра и спецсимволов. Очевидные значения и повторения отклоняются. Старые пароли остаются пригодными для открытия и импорта. Новые сейфы и смена пароля используют формат v2 с NFC и проверяемым профилем KDF. Перед этим обновите все устройства до 0.2.0 или новее. Открытие и обычное сохранение v1 оставляют пароль побайтно прежним; смена пароля переводит сейф в v2.
 
 Пределы: 1 000 записей паролей/SSH, 5 000 файлов, 100 папок; 20 МиБ на файл, 50 МиБ суммарно, 72 МиБ на зашифрованный сейф. Превышающий предел сейф не усекается и не заменяется. Слишком большой старый сейф сначала разделите на проверенные небольшие сейфы в прежней совместимой версии приложения.
+
+В **0.3.6** повторное открытие редактора проверяет доступ до и после показа окна; при отзыве доступа редактор закрывается. Позднее завершение открытия поиска не закрывает новую поисковую сессию. Это дополняет блокировку сейфа и отзыв копирования.
+
+Новое удаление сразу убирает запись из сохранённого сейфа. Отмена удерживает защищённую ссылку в открытой сессии на 10 секунд; блокировка, смена сейфа, синхронизация или смена пароля прекращают эту возможность. Прежняя корзина остаётся внутри зашифрованного сейфа. История восстановления и внешние копии могут содержать удалённые данные. Старые форматы сейфов и поля TOTP продолжают читаться и сохраняться.
 
 Смена пароля создаёт новый ключ данных и после успешной записи удаляет локальную историю восстановления и кэш синхронизации. При сбое очистки приложение предупреждает и повторяет её при открытии. Закройте программы, удерживающие снимки, и откройте сейф снова. Последующие правки создают историю уже под новым ключом.
 

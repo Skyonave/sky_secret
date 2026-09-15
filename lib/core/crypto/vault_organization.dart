@@ -87,6 +87,13 @@ class VaultOrganization {
     }
   }
 
+  void prependEntries(List<VaultEntry> added, String? parentId) {
+    if (parentId != null && folders.every((folder) => folder.id != parentId)) throw const VaultFormatException();
+    final siblings = children(parentId);
+    entries.addAll(added);
+    _renumber([for (final entry in added) VaultItem.entry(entry), ...siblings], parentId);
+  }
+
   void deleteFolder(VaultFolder folder) {
     final removedIds = {
       folder.id,

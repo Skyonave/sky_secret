@@ -27,19 +27,31 @@ class FileViewerManager {
     required Future<bool> Function(String) copy,
     required Future<void> Function() clearClipboard,
   }) async {
-    for (final viewer in _windows.where((v) => v.id == id && v.active)) {
+    if (isValid() == false) return;
+    for (final viewer in _windows.where((v) => v.id == id && v.active).toList()) {
+      if (viewer.isValid() == false) {
+        await _close(viewer);
+        _windows.remove(viewer);
+        continue;
+      }
       try {
         await viewer.controller?.show();
+        if (viewer.active == false || viewer.isValid() == false || isValid() == false) {
+          await _close(viewer);
+          _windows.remove(viewer);
+        }
         return;
       } catch (_) {
-        viewer.active = false;
+        await _close(viewer);
+        _windows.remove(viewer);
       }
     }
+    if (isValid() == false) return;
     final token = List.generate(
       16,
       (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
     ).join();
-    final viewer = _Viewer(id, WindowMethodChannel('skysecret/editor/$token'));
+    final viewer = _Viewer(id, WindowMethodChannel('skysecret/editor/$token'), isValid);
     _windows.add(viewer);
     viewer.initialText = text;
     await viewer.channel.setMethodCallHandler((call) async {
@@ -124,6 +136,7 @@ class FileViewerManager {
   }
 
   Future<void> _close(_Viewer viewer) async {
+    viewer.active = false;
     viewer.initialText = '';
     try {
       await viewer.controller?.hide();
@@ -140,10 +153,15 @@ class FileViewerManager {
 class _Viewer {
   final String id;
   final WindowMethodChannel channel;
+  final bool Function() isValid;
   bool active = true;
   bool private = false;
   String initialText = '';
   WindowController? controller;
 
-  _Viewer(this.id, this.channel);
+  _Viewer(
+    this.id,
+    this.channel,
+    this.isValid,
+  );
 }

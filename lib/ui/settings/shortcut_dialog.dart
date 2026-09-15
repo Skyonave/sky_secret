@@ -17,6 +17,7 @@ class ShortcutDialog extends StatefulWidget {
 
 class _ShortcutDialogState extends State<ShortcutDialog> {
   late HotKey _candidate = widget.desktop.shortcut;
+  bool _editingSearch = false;
   String? _error;
   bool _saving = false;
   final _recorderFocus = FocusNode();
@@ -74,7 +75,9 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final error = await widget.desktop.updateShortcut(_candidate);
+    final error = _editingSearch
+        ? await widget.desktop.updateSearchShortcut(_candidate)
+        : await widget.desktop.updateShortcut(_candidate);
     if (!mounted) return;
     if (error == null) {
       Navigator.of(context).pop();
@@ -90,14 +93,47 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
   Widget build(BuildContext context) => AlertDialog(
     scrollable: true,
     insetPadding: const EdgeInsets.all(20),
-    title: Text(t.shortcutTitle),
+    title: Text(t.keyboardShortcuts),
     content: SizedBox(
       width: 320,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          for (final search in [false, true])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  backgroundColor: _editingSearch == search ? Theme.of(context).colorScheme.primaryContainer : null,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: _saving
+                    ? null
+                    : () {
+                        setState(() {
+                          _editingSearch = search;
+                          _candidate = search ? widget.desktop.searchShortcut : widget.desktop.shortcut;
+                          _awaitingKey = false;
+                          _error = null;
+                        });
+                        _recorderFocus.requestFocus();
+                      },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(search ? t.browserSearch : t.shortcutManager)),
+                    Text(shortcutLabel(search ? widget.desktop.searchShortcut : widget.desktop.shortcut)),
+                  ],
+                ),
+              ),
+            ),
           Text(t.shortcutHelp, style: TextStyle(fontSize: 13)),
+          if (_editingSearch)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(t.searchShortcutHelp, style: const TextStyle(fontSize: 12)),
+            ),
           const SizedBox(height: 16),
           Focus(
             focusNode: _recorderFocus,
@@ -112,7 +148,7 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
               child: AnimatedContainer(
                 key: const Key('shortcut-recorder'),
                 duration: const Duration(milliseconds: 120),
-                constraints: const BoxConstraints(minHeight: 108),
+                constraints: const BoxConstraints(minHeight: 76),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
@@ -168,7 +204,7 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
             onPressed: _saving
                 ? null
                 : () => setState(() {
-                    _candidate = defaultShortcut();
+                    _candidate = _editingSearch ? defaultSearchShortcut() : defaultShortcut();
                     _awaitingKey = false;
                     _error = null;
                   }),

@@ -8,7 +8,7 @@ class CompanionWindow {
  public:
   explicit CompanionWindow(HWND main) : main_(main) {}
   std::optional<RECT> Bounds() const;
-  bool Place(HWND child, double gap);
+  bool Place(HWND child, double gap, bool above = false);
   void Detach();
   void OnMessage(UINT message, WPARAM wparam, LPARAM lparam);
 
@@ -18,6 +18,7 @@ class CompanionWindow {
   HWND main_;
   HWND child_ = nullptr;
   bool left_ = true;
+  bool above_ = false;
   double gap_ = 12;
 };
 

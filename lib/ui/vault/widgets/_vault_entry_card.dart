@@ -6,6 +6,7 @@ class _VaultEntryCard extends StatelessWidget {
   final Widget? trailing;
   final bool lifted;
   final bool copied;
+  final String? status;
 
   const _VaultEntryCard({
     super.key,
@@ -14,6 +15,7 @@ class _VaultEntryCard extends StatelessWidget {
     this.trailing,
     this.lifted = false,
     this.copied = false,
+    this.status,
   });
 
   @override
@@ -35,7 +37,7 @@ class _VaultEntryCard extends StatelessWidget {
         ? t.vaultSecretKind
         : entry.username;
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(8),
       side: BorderSide(color: lifted || copied ? colors.primary.withValues(alpha: 0.35) : colors.outlineVariant),
     );
 
@@ -52,9 +54,9 @@ class _VaultEntryCard extends StatelessWidget {
           onTap: onTap,
           customBorder: shape,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 72),
+            constraints: const BoxConstraints(minHeight: 60),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
                   AnimatedContainer(
@@ -105,7 +107,7 @@ class _VaultEntryCard extends StatelessWidget {
                               children: [...previousChildren, ?currentChild],
                             ),
                             child: Text(
-                              copied ? t.copied : subtitle,
+                              status ?? (copied ? t.copied : subtitle),
                               key: ValueKey(copied),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

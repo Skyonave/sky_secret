@@ -10,8 +10,8 @@ A portable password and file manager for Windows. Works offline, lives in the sy
 </p>
 
 - Multiple vaults with separate master passwords, **Argon2id + AES-256-GCM** encryption, password generation and automatic locking.
-- Secrets and files organized into sections and folders, with drag-and-drop and saved manual ordering.
-- Open the manager with **Shift+Space**, unlock your vault, then press **F** to open search in the center of the screen. Type a name, username, server or folder; choose a suggestion with **↑/↓ + Enter** or a click. **Esc** closes search. Mark favorites with a star. Deleted entries go to encrypted trash and can be restored; **Undo** is available immediately after deletion.
+- Secrets and files organized into sections and folders, with drag-and-drop, saved expansion state and new entries at the top.
+- Open the manager with **Shift+Space**, unlock your vault, then press **F** to show a compact search panel above it, without clicking the manager first. Type a name, username, server or folder; select with **↑/↓ + Enter** or a click. **Esc** closes search. Change both shortcuts in **Keyboard shortcuts**; search is disabled while typing in the manager. Starred entries appear in a top section. **Undo** stays in the deleted card for **10 seconds**, until the vault locks. Folder actions are available by right-click.
 - Create `.txt` files in the vault and edit text in separate windows; **Ctrl+S** saves changes.
 - Saved SSH connections through CMD and Windows OpenSSH.
 - Encrypted `.smv` import/export, optional GitHub backups and manual sync, conflict review, history and recovery.
@@ -33,8 +33,8 @@ Adding TOTP requires this authenticator-capable build on every device: the origi
 Переносной менеджер паролей и файлов для Windows. Работает офлайн, запускается в трее и открывается по **Shift+Space**. Написан на Flutter и Dart.
 
 - Несколько сейфов с отдельными мастер-паролями, шифрование **Argon2id + AES-256-GCM**, генератор паролей и автоблокировка.
-- Секреты и файлы в разделах и папках, перетаскивание и сохранение ручного порядка.
-- Откройте менеджер через **Shift+Space**, разблокируйте сейф и нажмите **F** — поиск появится в центре экрана. Введите название, логин, сервер или папку; выберите подсказку стрелками **↑/↓ + Enter** или мышью. **Esc** закрывает поиск. Звезда добавляет запись в избранное. Удалённые записи можно восстановить из зашифрованной корзины; сразу после удаления доступно **«Отменить»**.
+- Секреты и файлы в разделах и папках, перетаскивание, сохранение раскрытых разделов и новые записи в начале списка.
+- Откройте менеджер через **Shift+Space**, разблокируйте сейф и нажмите **F** — компактный поиск появится над менеджером без предварительного клика по окну. Введите название, логин, сервер или папку; выберите подсказку стрелками **↑/↓ + Enter** или мышью. **Esc** закрывает поиск. Оба сочетания меняются в **«Сочетаниях клавиш»**; при вводе текста в менеджере поиск отключён. Избранное появляется отдельным разделом сверху. **«Отменить»** остаётся прямо в удалённой карточке на **10 секунд**, до блокировки сейфа. Действия с папкой доступны по ПКМ.
 - Создание `.txt` внутри сейфа, редактирование текста в отдельных окнах; **Ctrl+S** сохраняет изменения.
 - Сохранённые SSH-подключения через CMD и Windows OpenSSH.
 - Импорт и экспорт зашифрованных `.smv`, необязательные копии в GitHub и ручная синхронизация, разбор конфликтов, история и восстановление.

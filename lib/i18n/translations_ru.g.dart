@@ -33,6 +33,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   Translations $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) =>
       Translations(meta: meta ?? this.$meta);
 
+  String browserDeleting({required Object seconds}) => 'Удалено · отмена ещё ${seconds} сек.';
+
+  String get keyboardShortcuts => 'Сочетания клавиш';
+
+  String get searchShortcutHelp =>
+      'Поиск доступен, пока менеджер показан и сейф открыт. Во время ввода текста сочетание отключено.';
+
+  String get shortcutManager => 'Открыть менеджер';
+
   String get vaultCreateTextFile => 'Создать .txt';
 
   String get vaultCreateText => 'Создать';
@@ -720,6 +729,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 extension on Translations {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
+      'browserDeleting' => ({required Object seconds}) => 'Удалено · отмена ещё ${seconds} сек.',
+      'keyboardShortcuts' => 'Сочетания клавиш',
+      'searchShortcutHelp' =>
+        'Поиск доступен, пока менеджер показан и сейф открыт. Во время ввода текста сочетание отключено.',
+      'shortcutManager' => 'Открыть менеджер',
       'vaultCreateTextFile' => 'Создать .txt',
       'vaultCreateText' => 'Создать',
       'vaultTextFileName' => 'Имя файла',

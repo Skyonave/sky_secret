@@ -6,6 +6,20 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:skysecret/core/settings/shortcut_settings.dart';
 
 void main() {
+  test('search defaults to F and is saved independently of the manager shortcut', () async {
+    final directory = await Directory.systemTemp.createTemp('search-shortcut-test-');
+    addTearDown(() => directory.delete(recursive: true));
+    final manager = ShortcutStore(file: File('${directory.path}/settings.json'));
+    final search = ShortcutStore(file: File('${directory.path}/search_shortcut.json'));
+    expect(shortcutLabel(defaultSearchShortcut()), 'F');
+    expect(defaultSearchShortcut().scope, HotKeyScope.system);
+    await manager.save(defaultShortcut());
+    await search.save(defaultSearchShortcut());
+    final replacement = HotKey(key: PhysicalKeyboardKey.keyK, modifiers: [HotKeyModifier.control]);
+    await search.save(replacement);
+    expect(sameShortcut((await search.load())!, replacement), isTrue);
+    expect(sameShortcut((await manager.load())!, defaultShortcut()), isTrue);
+  });
   test(
     'shortcut survives restart and replacement, corrupt settings rejected',
     () async {

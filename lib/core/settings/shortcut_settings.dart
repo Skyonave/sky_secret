@@ -14,6 +14,8 @@ HotKey defaultShortcut() => HotKey(
   scope: HotKeyScope.system,
 );
 
+HotKey defaultSearchShortcut() => HotKey(key: PhysicalKeyboardKey.keyF, modifiers: [], scope: HotKeyScope.system);
+
 const supportedModifiers = [
   HotKeyModifier.control,
   HotKeyModifier.alt,
@@ -66,6 +68,10 @@ class ShortcutStore {
           File(
             '${appDataDirectory().path}${Platform.pathSeparator}settings.json',
           );
+
+  factory ShortcutStore.search() => ShortcutStore(
+    file: File('${appDataDirectory().path}${Platform.pathSeparator}search_shortcut.json'),
+  );
 
   Future<HotKey?> load() async {
     final bytes = await readBoundedFile(file, maxBytes: 16 * 1024);

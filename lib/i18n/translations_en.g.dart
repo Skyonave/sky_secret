@@ -37,6 +37,15 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
       TranslationsEn(meta: meta ?? this.$meta);
 
   @override
+  String browserDeleting({required Object seconds}) => 'Deleted · undo for ${seconds} s';
+  @override
+  String get keyboardShortcuts => 'Keyboard shortcuts';
+  @override
+  String get searchShortcutHelp =>
+      'Search is available while the manager is visible and the vault is unlocked. Disabled while editing text.';
+  @override
+  String get shortcutManager => 'Open manager';
+  @override
   String get vaultCreateTextFile => 'Create .txt';
   @override
   String get vaultCreateText => 'Create';
@@ -725,6 +734,11 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 extension on TranslationsEn {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
+      'browserDeleting' => ({required Object seconds}) => 'Deleted · undo for ${seconds} s',
+      'keyboardShortcuts' => 'Keyboard shortcuts',
+      'searchShortcutHelp' =>
+        'Search is available while the manager is visible and the vault is unlocked. Disabled while editing text.',
+      'shortcutManager' => 'Open manager',
       'vaultCreateTextFile' => 'Create .txt',
       'vaultCreateText' => 'Create',
       'vaultTextFileName' => 'File name',

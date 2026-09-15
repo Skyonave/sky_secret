@@ -13,11 +13,14 @@ import 'vault_collection_test.dart' show collectionPassword, saveRevision;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('compact tiles use the visible width and grow upward within the work area', () {
+  test('compact tiles keep a fixed width and grow upward within the work area', () {
     const work = Rect.fromLTWH(-1920, 0, 1920, 1040);
     for (final left in [-1950.0, -1600.0, -1000.0, -500.0]) {
       final size = totpWindowSize(Rect.fromLTWH(left, 350, 454, 602), work);
-      expect(size, const Size(227, 56));
+      expect(size, const Size(230, 56));
+    }
+    for (final width in [400.0, 460.0, 1600.0, 8000.0]) {
+      expect(totpWindowSize(Rect.fromLTWH(-1000, 350, width, 602), work).width, 230);
     }
     final many = totpWindowSize(const Rect.fromLTWH(-500, 350, 454, 602), work, count: 100);
     final tiles = totpTileRects(many);
@@ -28,7 +31,7 @@ void main() {
     }
     expect(
       totpWindowSize(const Rect.fromLTWH(0, -700, 454, 602), work, count: 100),
-      const Size(227, 56),
+      const Size(230, 56),
     );
     expect(
       totpWindowSize(const Rect.fromLTWH(0, 0, 454, 2000), work, count: 100).height,
@@ -153,7 +156,7 @@ void main() {
     expect(await invoke('ready'), isTrue);
     await opening;
     final data = await invoke('read') as Map;
-    expect(data['width'], 227.0);
+    expect(data['width'], 230.0);
     expect(data['height'], 56.0);
     expect(data.containsKey('x'), isFalse);
     expect(data.containsKey('y'), isFalse);

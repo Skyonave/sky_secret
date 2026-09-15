@@ -1,4 +1,8 @@
 {
+  "browserDeleting": "Удалено · отмена ещё $seconds сек.",
+  "keyboardShortcuts": "Сочетания клавиш",
+  "searchShortcutHelp": "Поиск доступен, пока менеджер показан и сейф открыт. Во время ввода текста сочетание отключено.",
+  "shortcutManager": "Открыть менеджер",
   "vaultCreateTextFile": "Создать .txt",
   "vaultCreateText": "Создать",
   "vaultTextFileName": "Имя файла",

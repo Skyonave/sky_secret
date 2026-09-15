@@ -18,7 +18,7 @@ bool CompanionWindow::ValidChild(HWND child) const {
   return process == GetCurrentProcessId();
 }
 
-bool CompanionWindow::Place(HWND child, double gap) {
+bool CompanionWindow::Place(HWND child, double gap, bool above) {
   if (!ValidChild(child) || !std::isfinite(gap) || gap < 0 || gap > 100) return false;
   const auto bounds = Bounds();
   RECT tile{};
@@ -26,6 +26,7 @@ bool CompanionWindow::Place(HWND child, double gap) {
   if (!bounds || !GetWindowRect(child, &tile) ||
       !GetMonitorInfo(MonitorFromWindow(main_, MONITOR_DEFAULTTONEAREST), &monitor)) return false;
   gap_ = gap;
+  above_ = above;
   if (child_ != child) {
     const auto needed = tile.right - tile.left + std::lround(gap_ * GetDpiForWindow(main_) / 96.0);
     const auto left_room = bounds->left - monitor.rcWork.left;
@@ -45,8 +46,19 @@ bool CompanionWindow::Follow() {
   RECT tile{};
   if (!bounds || !GetWindowRect(child_, &tile)) return false;
   const auto gap = std::lround(gap_ * GetDpiForWindow(main_) / 96.0);
-  const auto x = left_ ? bounds->left - gap - (tile.right - tile.left) : bounds->right + gap;
-  const auto y = bounds->bottom - (tile.bottom - tile.top);
+  auto x = left_ ? bounds->left - gap - (tile.right - tile.left) : bounds->right + gap;
+  auto y = bounds->bottom - (tile.bottom - tile.top);
+  if (above_) {
+    MONITORINFO monitor{sizeof(MONITORINFO)};
+    if (!GetMonitorInfo(MonitorFromWindow(main_, MONITOR_DEFAULTTONEAREST), &monitor)) return false;
+    const auto width = tile.right - tile.left;
+    const auto height = tile.bottom - tile.top;
+    x = bounds->left + (bounds->right - bounds->left - width) / 2;
+    y = bounds->top - gap - height;
+    if (x + width > monitor.rcWork.right) x = monitor.rcWork.right - width;
+    if (x < monitor.rcWork.left) x = monitor.rcWork.left;
+    if (y < monitor.rcWork.top) y = monitor.rcWork.top;
+  }
   if (tile.left == x && tile.top == y) return true;
   return SetWindowPos(child_, nullptr, x, y, 0, 0,
                       SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER) != FALSE;

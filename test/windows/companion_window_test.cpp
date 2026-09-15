@@ -114,6 +114,25 @@ int main() {
   position.flags = SWP_HIDEWINDOW;
   companion.OnMessage(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&position));
   CHECK(hides == 3);
+  dpi = 96;
+  main_bounds = RECT{1000, 400, 1470, 1010};
+  work_bounds = RECT{0, 0, 1920, 1040};
+  code_bounds = RECT{0, 0, 360, 64};
+  CHECK(companion.Place(code_window, 12, true));
+  CHECK(code_bounds.left == 1055);
+  CHECK(code_bounds.bottom == main_bounds.top - 12);
+  const auto fixed_width = code_bounds.right - code_bounds.left;
+  main_bounds.right += 300;
+  position.flags = 0;
+  companion.OnMessage(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&position));
+  CHECK(code_bounds.left == 1205);
+  CHECK(code_bounds.right - code_bounds.left == fixed_width);
+  code_bounds.bottom = code_bounds.top + 256;
+  main_bounds.top = 20;
+  companion.OnMessage(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&position));
+  CHECK(code_bounds.top == work_bounds.top);
+  CHECK(code_bounds.bottom - code_bounds.top == 256);
+  CHECK((move_flags & SWP_NOACTIVATE) != 0);
   std::puts("Companion follows each native move, aligns client edges, preserves focus and detaches; no windows created");
   return 0;
 }

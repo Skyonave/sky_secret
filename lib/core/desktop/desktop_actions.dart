@@ -14,6 +14,11 @@ abstract class DesktopActions extends ChangeNotifier {
   Future<void> drag();
 
   HotKey get shortcut => defaultShortcut();
+  HotKey get searchShortcut => defaultSearchShortcut();
+
+  void setSearchHandler(VoidCallback? handler) {}
+
+  Future<String?> updateSearchShortcut(HotKey candidate) async => null;
 
   Future<String?> updateShortcut(HotKey shortcut);
 

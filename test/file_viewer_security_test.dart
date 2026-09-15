@@ -18,6 +18,9 @@ class EditorHarness {
   int saves = 0;
   int copies = 0;
   int clears = 0;
+  int shows = 0;
+  int locks = 0;
+  Completer<void>? showing;
   Completer<bool>? copying;
 
   EditorHarness() {
@@ -31,9 +34,16 @@ class EditorHarness {
         channel = args['channel'] as String;
         return 'synthetic-editor';
       }
+      if (call.method == 'window_show') {
+        shows++;
+        await showing?.future;
+      }
       return null;
     });
-    messenger.setMockMethodCallHandler(channels, (_) async => true);
+    messenger.setMockMethodCallHandler(channels, (call) async {
+      if (call.method == 'invokeMethod' && (call.arguments as Map)['method'] == 'lock') locks++;
+      return true;
+    });
   }
 
   Future<void> open() => manager.open(
@@ -77,6 +87,30 @@ class EditorHarness {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('editor does not show cached text when its access has expired', () async {
+    final host = EditorHarness();
+    addTearDown(host.dispose);
+    await host.open();
+    host.valid = false;
+    await host.open();
+    expect(host.shows, 0);
+  });
+
+  test('editor closes when access expires while showing an existing window', () async {
+    final host = EditorHarness();
+    addTearDown(host.dispose);
+    await host.open();
+    host.showing = Completer<void>();
+    final opening = host.open();
+    await Future<void>.delayed(Duration.zero);
+    expect(host.shows, 1);
+    host.valid = false;
+    host.showing!.complete();
+    await opening;
+    expect(host.locks, 1);
+    expect(host.manager.hasOpenViewers, isFalse);
+  });
 
   test('editor refuses secrets and actions until capture policy succeeds', () async {
     final host = EditorHarness();

@@ -1,4 +1,8 @@
 {
+  "browserDeleting": "Deleted · undo for $seconds s",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "searchShortcutHelp": "Search is available while the manager is visible and the vault is unlocked. Disabled while editing text.",
+  "shortcutManager": "Open manager",
   "vaultCreateTextFile": "Create .txt",
   "vaultCreateText": "Create",
   "vaultTextFileName": "File name",

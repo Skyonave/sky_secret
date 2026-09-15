@@ -109,7 +109,7 @@ class VaultEntryController {
             order: previous.order,
           );
     if (previous == null) {
-      organization.appendEntries([entry], folderId);
+      organization.prependEntries([entry], folderId);
     } else {
       final index = organization.entries.indexWhere((candidate) => candidate.id == id);
       organization.entries[index] = entry;

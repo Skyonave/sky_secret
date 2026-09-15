@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 const totpTileHeight = 56.0;
+const totpTileWidth = 230.0;
 const totpTileGap = 8.0;
 const totpTileRadius = 10.0;
 const totpWindowGap = 12.0;
@@ -17,5 +18,5 @@ Size totpWindowSize(Rect main, Rect work, {int count = 1}) {
   final available = totpVisibleSlots(bottom - work.top);
   final capacity = available < 1 ? 1 : available;
   final slots = count.clamp(1, capacity);
-  return Size(main.width / 2, slots * (totpTileHeight + totpTileGap) - totpTileGap);
+  return Size(totpTileWidth, slots * (totpTileHeight + totpTileGap) - totpTileGap);
 }

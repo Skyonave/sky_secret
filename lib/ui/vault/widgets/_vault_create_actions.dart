@@ -19,54 +19,42 @@ class _VaultCreateActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final outlinedStyle = OutlinedButton.styleFrom(
-      minimumSize: const Size(0, 44),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 8),
-        FilledButton.icon(
-          key: const Key('add-entry'),
-          onPressed: busy ? null : onEntry,
-          icon: const Icon(Icons.add_rounded),
-          label: Text(t.vaultAddEntry),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          key: const Key('add-totp'),
-          onPressed: busy ? null : onTotp,
-          style: outlinedStyle,
-          icon: const Icon(Icons.timer_outlined, size: 20),
-          label: Text(t.totpAdd),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          key: const Key('add-ssh'),
-          onPressed: busy ? null : onSsh,
-          style: outlinedStyle,
-          icon: const Icon(Icons.terminal_rounded, size: 20),
-          label: Text(t.sshAdd),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          key: const Key('add-file'),
-          onPressed: busy ? null : onFile,
-          style: outlinedStyle,
-          icon: const Icon(Icons.upload_file_outlined, size: 20),
-          label: Text(t.vaultAddFile),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          key: const Key('new-text-file'),
-          onPressed: busy ? null : onTextFile,
-          style: outlinedStyle,
-          icon: const Icon(Icons.note_add_outlined, size: 20),
-          label: Text(t.vaultCreateTextFile),
-        ),
-      ],
+    final actions = [
+      (key: 'add-entry', icon: Icons.add_rounded, label: t.vaultAddEntry, run: onEntry),
+      (key: 'add-totp', icon: Icons.timer_outlined, label: t.totpAdd, run: onTotp),
+      (key: 'add-ssh', icon: Icons.terminal_rounded, label: t.sshAdd, run: onSsh),
+      (key: 'add-file', icon: Icons.upload_file_outlined, label: t.vaultAddFile, run: onFile),
+      (key: 'new-text-file', icon: Icons.note_add_outlined, label: t.vaultCreateTextFile, run: onTextFile),
+    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = (constraints.maxWidth / 56).floor().clamp(1, 5);
+          final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final action in actions)
+                SizedBox(
+                  width: width,
+                  height: 40,
+                  child: IconButton.filledTonal(
+                    key: Key(action.key),
+                    tooltip: action.label,
+                    onPressed: busy ? null : action.run,
+                    padding: const EdgeInsets.all(10),
+                    style: IconButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: Icon(action.icon, size: 20),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

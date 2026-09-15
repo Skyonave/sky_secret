@@ -36,7 +36,7 @@ abstract final class VaultTextFile {
       throw const TextFileException(TextFileProblem.limit);
     }
     final entry = VaultEntry.file(VaultAttachment.create(normalized, const []), folderId: folderId);
-    organization.appendEntries([entry], folderId);
+    organization.prependEntries([entry], folderId);
     return organization.entries.firstWhere((candidate) => candidate.id == entry.id);
   }
 }

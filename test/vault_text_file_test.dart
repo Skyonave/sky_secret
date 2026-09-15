@@ -20,14 +20,14 @@ void main() {
     }
   });
 
-  test('creates empty UTF-8 files after mixed siblings in root, section and folder', () {
+  test('creates empty UTF-8 files before mixed siblings in root, section and folder', () {
     const section = VaultFolder(id: 'section', name: 'Synthetic section');
     const folder = VaultFolder(id: 'folder', name: 'Synthetic folder', parentId: 'section');
     final organization = VaultOrganization(entries: [], folders: [section, folder]);
     for (final parent in [null, section.id, folder.id]) {
       final previous = organization.children(parent).map((item) => item.id).toList();
       final entry = VaultTextFile.prepare(name: 'Synthetic', organization: organization, folderId: parent);
-      expect(organization.children(parent).map((item) => item.id), [...previous, entry.id]);
+      expect(organization.children(parent).map((item) => item.id), [entry.id, ...previous]);
       expect(entry.folderId, parent);
       expect(entry.isFile, isTrue);
       final file = entry.attachments.single;

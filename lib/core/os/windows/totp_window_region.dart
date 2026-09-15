@@ -59,3 +59,23 @@ void setTotpWindowRegion(int id, Size size) {
     if (transferred == false) win32.DeleteObject(win32.HGDIOBJ(combined));
   }
 }
+
+void setRoundedWindowRegion(int id, Size size, double radius) {
+  final window = win32.HWND(Pointer.fromAddress(id));
+  final dpi = win32.GetDpiForWindow(window);
+  if (dpi == 0) throw StateError('Window scale unavailable');
+  final scale = dpi / 96;
+  final region = _roundRegion(
+    0,
+    0,
+    (size.width * scale).round(),
+    (size.height * scale).round(),
+    (radius * 2 * scale).round(),
+    (radius * 2 * scale).round(),
+  );
+  if (region.address == 0) throw StateError('Window region unavailable');
+  if (win32.SetWindowRgn(window, win32.HRGN(region), true) == 0) {
+    win32.DeleteObject(win32.HGDIOBJ(region));
+    throw StateError('Window shape unavailable');
+  }
+}

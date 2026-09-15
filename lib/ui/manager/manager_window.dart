@@ -8,7 +8,6 @@ import '../../core/crypto/crypto.dart';
 import '../../core/desktop/desktop_actions.dart';
 import '../../core/desktop/clipboard/sensitive_clipboard.dart';
 import '../../core/desktop/clipboard/sensitive_clipboard_boundary.dart';
-import '../../core/settings/shortcut_settings.dart';
 import '../../core/settings/vault_preferences.dart';
 import '../../core/os/windows/windows_sensitive_clipboard.dart';
 import '../../core/sync/github/github_backup.dart';
@@ -264,6 +263,10 @@ class _ManagerWindowState extends State<ManagerWindow> {
               child: Column(
                 children: [
                   _titleBar(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                    child: _tabs(),
+                  ),
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -277,11 +280,11 @@ class _ManagerWindowState extends State<ManagerWindow> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _tabs(),
-                              SizedBox(height: compact ? 8 : 16),
                               Offstage(
                                 offstage: _page != 0,
                                 child: VaultPanel(
+                                  onSearchHandlerChanged: widget.desktop.setSearchHandler,
+                                  searchShortcut: () => widget.desktop.searchShortcut,
                                   onCodesBlur: widget.desktop.onCompanionBlur,
                                   active: _page == 0,
                                   key: _vaultKey,
@@ -411,9 +414,9 @@ class _ManagerWindowState extends State<ManagerWindow> {
         foregroundColor: _page == page ? AppColors.accent : AppColors.muted,
         backgroundColor: _page == page ? const Color(0xFF1B3A4B) : Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-        minimumSize: const Size(0, 40),
+        minimumSize: const Size(0, 32),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
       onPressed: () => _selectPage(page),
       child: Row(
@@ -552,7 +555,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        shortcutLabel(widget.desktop.shortcut),
+                        t.keyboardShortcuts,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

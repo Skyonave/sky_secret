@@ -13,15 +13,95 @@ import 'package:window_manager/window_manager.dart';
 import '../../../i18n/translations.g.dart';
 import '../../desktop/desktop_actions.dart';
 import '../../desktop/focus_dismissal.dart';
+import '../../desktop/system_shortcut.dart';
 import '../../settings/shortcut_settings.dart';
 import '../../settings/vault_preferences.dart';
 import 'window_privacy.dart';
+import 'window_work_area.dart';
 
 class DesktopController extends DesktopActions with WindowListener, TrayListener {
+  static const _managerWidth = 460.0;
   final _ready = Completer<void>();
   final ShortcutStore _settings;
   final void Function()? onExit;
   HotKey _shortcut = defaultShortcut();
+  HotKey _searchShortcut = defaultSearchShortcut();
+  final _searchSettings = ShortcutStore.search();
+  void Function()? _searchHandler;
+  bool _managerVisible = false;
+  bool _searchRegistered = false;
+  Future<void> _searchTransition = Future.value();
+
+  @override
+  HotKey get searchShortcut => _searchShortcut;
+
+  @override
+  void setSearchHandler(void Function()? handler) {
+    if (_searchHandler == handler) return;
+    _searchHandler = handler;
+    _syncSearchShortcut();
+  }
+
+  void _syncSearchShortcut() {
+    _searchTransition = _searchTransition
+        .then((_) async {
+          final enabled = _managerVisible && _searchHandler != null && !_capturingShortcut && !_exiting;
+          if (enabled == _searchRegistered) return;
+          if (_searchRegistered) {
+            await hotKeyManager.unregister(_searchShortcut);
+            _searchRegistered = false;
+          } else if (enabled) {
+            const probeId = 0x5350;
+            final available = win32.RegisterHotKey(
+              null,
+              probeId,
+              _nativeModifiers(_searchShortcut),
+              _searchShortcut.physicalKey.keyCode!,
+            );
+            if (!available.value) throw StateError('Search shortcut unavailable');
+            win32.UnregisterHotKey(null, probeId);
+            await registerSystemShortcut(
+              _searchShortcut,
+              keyDownHandler: (_) {
+                if (_managerVisible && !_capturingShortcut && !_exiting) _searchHandler?.call();
+              },
+            );
+            _searchRegistered = true;
+          }
+        })
+        .catchError((_) {
+          _notice = t.shortcutUnavailable(shortcut: shortcutLabel(_searchShortcut));
+          notifyListeners();
+        });
+  }
+
+  @override
+  Future<String?> updateSearchShortcut(HotKey candidate) async {
+    if (!validShortcut(candidate)) return t.unsupportedShortcut;
+    if (sameShortcut(candidate, _shortcut)) return t.shortcutBusy;
+    if (sameShortcut(candidate, _searchShortcut)) return null;
+    await _searchTransition;
+    if (_searchRegistered) {
+      await hotKeyManager.unregister(_searchShortcut);
+      _searchRegistered = false;
+    }
+    try {
+      const probeId = 0x534F;
+      if (!win32.RegisterHotKey(null, probeId, _nativeModifiers(candidate), candidate.physicalKey.keyCode!).value) {
+        return t.shortcutBusy;
+      }
+      win32.UnregisterHotKey(null, probeId);
+      await _searchSettings.save(candidate);
+      _searchShortcut = candidate;
+      notifyListeners();
+      return null;
+    } catch (_) {
+      return t.saveSettingsFailed;
+    } finally {
+      _syncSearchShortcut();
+    }
+  }
+
   bool _capturingShortcut = false;
   bool _changingShortcut = false;
   String? _notice;
@@ -46,7 +126,10 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
   HotKey get shortcut => _shortcut;
 
   @override
-  void setShortcutCapture(bool capturing) => _capturingShortcut = capturing;
+  void setShortcutCapture(bool capturing) {
+    _capturingShortcut = capturing;
+    _syncSearchShortcut();
+  }
 
   @override
   void setSshAuthenticationPending(bool pending) {
@@ -83,6 +166,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
   Future<void> initialize() async {
     try {
       final saved = await _settings.load() ?? defaultShortcut();
+      _searchShortcut = await _searchSettings.load() ?? defaultSearchShortcut();
       _shortcut = HotKey(
         key: saved.physicalKey,
         modifiers: saved.modifiers ?? [],
@@ -104,8 +188,9 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
     trayManager.addListener(this);
     await windowManager.waitUntilReadyToShow(
       WindowOptions(
-        size: Size(460, 600),
-        minimumSize: Size(400, 520),
+        size: Size(_managerWidth, 600),
+        minimumSize: Size(_managerWidth, 520),
+        maximumSize: Size(_managerWidth, 600),
         center: false,
         skipTaskbar: true,
         title: t.appName,
@@ -157,7 +242,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
     if (probe.value) {
       win32.UnregisterHotKey(null, probeId);
       try {
-        await hotKeyManager.register(
+        await registerSystemShortcut(
           _shortcut,
           keyDownHandler: (_) => _onHotkey(),
         );
@@ -207,6 +292,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
     if (_changingShortcut || _exiting) return t.retry;
     if (!validShortcut(candidate)) return t.unsupportedShortcut;
     if (_registered && sameShortcut(candidate, _shortcut)) return null;
+    if (sameShortcut(candidate, _searchShortcut)) return t.shortcutBusy;
     _changingShortcut = true;
     final next = HotKey(
       key: candidate.physicalKey,
@@ -225,7 +311,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
         return t.shortcutBusy;
       }
       win32.UnregisterHotKey(null, probeId);
-      await hotKeyManager.register(next, keyDownHandler: (_) => _onHotkey());
+      await registerSystemShortcut(next, keyDownHandler: (_) => _onHotkey());
       nextRegistered = true;
       try {
         await _settings.save(next);
@@ -291,6 +377,14 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
   Future<void> _showWindow({bool preserveDragFocus = false}) async {
     _blurDismissal.cancel();
     if (await windowManager.isMinimized()) await windowManager.restore();
+    final work = windowWorkArea(await windowManager.getId());
+    final height = (work.height - 100).clamp(360.0, 600.0);
+    await windowManager.setMinimumSize(Size(_managerWidth, height < 520 ? height : 520));
+    await windowManager.setMaximumSize(Size(_managerWidth, height));
+    final size = await windowManager.getSize();
+    if (size.width != _managerWidth || size.height > height) {
+      await windowManager.setSize(Size(_managerWidth, size.height.clamp(0.0, height)));
+    }
     final corner = await calcWindowPosition(
       await windowManager.getSize(),
       Alignment.bottomRight,
@@ -303,10 +397,14 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
       await windowManager.focus();
     }
     onAfterShow?.call();
+    _managerVisible = true;
+    _syncSearchShortcut();
   }
 
   @override
   Future<void> hide() {
+    _managerVisible = false;
+    _syncSearchShortcut();
     _blurDismissal.cancel();
     _fileDragHover = false;
     onBeforeHide?.call();
@@ -403,6 +501,10 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
   Future<void> releaseResources() async {
     if (_exiting) return;
     _exiting = true;
+    _managerVisible = false;
+    _searchHandler = null;
+    _syncSearchShortcut();
+    await _searchTransition;
     _blurDismissal.cancel();
     _releaseTimer?.cancel();
     if (_registered) await hotKeyManager.unregister(_shortcut);
