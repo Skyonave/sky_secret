@@ -1,3 +1,5 @@
+import '../shared/desktop_tooltip.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -315,7 +317,7 @@ class _TotpWindowState extends State<TotpWindow> with WindowListener {
               style: const TextStyle(fontSize: 11),
             ),
           ),
-          IconButton(
+          DesktopIconButton(
             tooltip: t.totpClose,
             onPressed: () => unawaited(_dismiss()),
             icon: const Icon(Icons.close, size: 18),
@@ -357,7 +359,7 @@ class _TotpWindowState extends State<TotpWindow> with WindowListener {
                         row['title'] as String,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                        style: const TextStyle(fontSize: 11, color: AppColors.muted),
                       ),
                       const SizedBox(height: 2),
                       FittedBox(
@@ -368,6 +370,7 @@ class _TotpWindowState extends State<TotpWindow> with WindowListener {
                           maxLines: 1,
                           style: const TextStyle(
                             fontSize: 20,
+                            fontFamily: 'Consolas',
                             letterSpacing: 2,
                             color: AppColors.accent,
                             fontWeight: FontWeight.w600,
@@ -377,7 +380,7 @@ class _TotpWindowState extends State<TotpWindow> with WindowListener {
                     ],
                   ),
                 ),
-                Tooltip(
+                DesktopTooltip(
                   message: _error ?? (copied ? t.copied : t.totpCopy),
                   child: Icon(
                     _error != null
@@ -427,7 +430,7 @@ class _TotpWindowState extends State<TotpWindow> with WindowListener {
     );
   }
 
-  Widget _pageButton(IconData icon, VoidCallback? action) => IconButton(
+  Widget _pageButton(IconData icon, VoidCallback? action) => DesktopIconButton(
     tooltip: '${_page + 1}–${_page + _slots} / ${_rows.length}',
     style: IconButton.styleFrom(minimumSize: const Size(20, 20), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
     constraints: const BoxConstraints.tightFor(width: 20, height: 20),

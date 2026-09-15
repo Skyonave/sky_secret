@@ -20,18 +20,18 @@ class _SearchSuggestion extends StatelessWidget {
         : kind == 'ssh'
         ? t.sshConnect
         : t.searchCopyPassword;
-    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(4));
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
       child: Material(
-        color: selected ? colors.primaryContainer : colors.surfaceContainer,
+        color: selected ? colors.primaryContainer : Colors.transparent,
         shape: shape,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onSelect,
           customBorder: shape,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
                 Icon(
@@ -42,7 +42,7 @@ class _SearchSuggestion extends StatelessWidget {
                       : kind == 'ssh'
                       ? Icons.terminal
                       : Icons.key_rounded,
-                  size: 22,
+                  size: 17,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -51,12 +51,12 @@ class _SearchSuggestion extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(result['title'] as String, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 1),
                       Text(
                         [if (username.isNotEmpty) username, location.isEmpty ? t.vaultRoot : location].join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+                        style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -66,7 +66,7 @@ class _SearchSuggestion extends StatelessWidget {
                   Icon(Icons.star_rounded, size: 16, color: colors.primary),
                   const SizedBox(width: 8),
                 ],
-                Tooltip(message: action, child: const Icon(Icons.keyboard_return_rounded, size: 20)),
+                DesktopTooltip(message: action, child: const Icon(Icons.keyboard_return_rounded, size: 20)),
               ],
             ),
           ),

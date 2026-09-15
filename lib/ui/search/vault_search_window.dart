@@ -1,3 +1,5 @@
+import '../shared/desktop_tooltip.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -148,7 +150,7 @@ class _VaultSearchWindowState extends State<VaultSearchWindow> with WindowListen
   }
 
   Future<void> _resize(int epoch) {
-    final height = _query.text.isEmpty ? 64.0 : 64.0 + (_results.isEmpty ? 40 : _results.length.clamp(1, 3) * 64);
+    final height = _query.text.isEmpty ? 64.0 : 64.0 + (_results.isEmpty ? 40 : _results.length.clamp(1, 3) * 48);
     final previous = _layout;
     final layout = () async {
       await previous;
@@ -215,12 +217,12 @@ class _VaultSearchWindowState extends State<VaultSearchWindow> with WindowListen
     _activity();
     setState(() => _selected = (_selected + offset).clamp(0, _results.length - 1));
     if (_scroll.hasClients) {
-      final top = _selected * 64.0;
+      final top = _selected * 48.0;
       final position = _scroll.position;
       final target = top < position.pixels
           ? top
-          : top + 64 > position.pixels + position.viewportDimension
-          ? top + 64 - position.viewportDimension
+          : top + 48 > position.pixels + position.viewportDimension
+          ? top + 48 - position.viewportDimension
           : position.pixels;
       _scroll.jumpTo(target.clamp(0, position.maxScrollExtent));
     }
@@ -350,7 +352,7 @@ class _VaultSearchWindowState extends State<VaultSearchWindow> with WindowListen
                               ),
                             ),
                             const SizedBox(width: 4),
-                            IconButton(
+                            DesktopIconButton(
                               tooltip: t.browserCloseSearch,
                               onPressed: () => unawaited(_dismiss()),
                               padding: const EdgeInsets.all(10),
@@ -374,7 +376,7 @@ class _VaultSearchWindowState extends State<VaultSearchWindow> with WindowListen
                               : ListView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 4),
                                   controller: _scroll,
-                                  itemExtent: 64,
+                                  itemExtent: 48,
                                   itemCount: _results.length,
                                   itemBuilder: (context, index) => _SearchSuggestion(
                                     result: _results[index],

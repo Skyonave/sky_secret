@@ -107,7 +107,7 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   backgroundColor: _editingSearch == search ? Theme.of(context).colorScheme.primaryContainer : null,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 onPressed: _saving
                     ? null
@@ -148,11 +148,11 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
               child: AnimatedContainer(
                 key: const Key('shortcut-recorder'),
                 duration: const Duration(milliseconds: 120),
-                constraints: const BoxConstraints(minHeight: 76),
-                padding: const EdgeInsets.all(18),
+                constraints: const BoxConstraints(minHeight: 64),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     width: _recorderFocus.hasFocus ? 2 : 1,
                     color: _recorderFocus.hasFocus
@@ -170,7 +170,7 @@ class _ShortcutDialogState extends State<ShortcutDialog> {
                         key: const Key('shortcut-preview'),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

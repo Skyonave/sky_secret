@@ -73,8 +73,8 @@ class _VaultTextFileDialogState extends State<_VaultTextFileDialog> {
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Icon(Icons.description_outlined, size: 20),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 validator: (value) {
                   try {

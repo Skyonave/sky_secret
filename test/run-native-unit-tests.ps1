@@ -7,13 +7,15 @@ $cache = Get-Content -LiteralPath (Join-Path $buildRoot 'CMakeCache.txt')
 $command = @($cache | Where-Object { $_.StartsWith('CMAKE_COMMAND:INTERNAL=') })
 if ($command.Count -ne 1) { throw 'Build Windows before running native unit tests' }
 $cmake = $command[0].Substring('CMAKE_COMMAND:INTERNAL='.Length)
-& $cmake --build $buildRoot --config Release --target desktop_window_focus_test desktop_window_focus_baseline window_layout_test window_layout_baseline companion_window_test
+& $cmake --build $buildRoot --config Release --target desktop_window_focus_test desktop_window_focus_baseline window_layout_test window_layout_baseline companion_window_test virtual_file_data_test
 if ($LASTEXITCODE -ne 0) { throw 'Native unit build failed' }
 
 $previousPath = $env:PATH
 try {
     $runtime = Join-Path $buildRoot 'runner/Release'
     $env:PATH = "$runtime;$env:PATH"
+    & (Join-Path $runtime 'virtual_file_data_test.exe')
+    if ($LASTEXITCODE -ne 0) { throw 'Virtual file transfer unit checks failed' }
     & (Join-Path $runtime 'companion_window_test.exe')
     if ($LASTEXITCODE -ne 0) { throw 'Companion movement regression failed' }
     $baseline = Join-Path $buildRoot 'Release/desktop_window_focus_baseline.exe'

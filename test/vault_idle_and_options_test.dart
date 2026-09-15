@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:skysecret/ui/shared/desktop_option.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skysecret/app.dart';
 import 'package:skysecret/core/crypto/crypto.dart';
@@ -66,7 +67,7 @@ void main() {
     Future<void> configure(bool enabled) async {
       await tester.tap(find.byKey(const Key('vault-settings')));
       await tester.pumpAndSettle();
-      tester.widget<SwitchListTile>(find.byKey(const Key('auto-lock-switch'))).onChanged!(enabled);
+      tester.widget<DesktopOption>(find.byKey(const Key('auto-lock-switch'))).onChanged!(enabled);
       await tester.pump();
       await tester.tap(find.byKey(const Key('save-vault-preferences')));
       await tester.pumpAndSettle();
@@ -101,18 +102,18 @@ void main() {
       final original = password();
       await tester.tap(find.byKey(const Key('entry-password-options')));
       await tester.pumpAndSettle();
-      tester.widget<Slider>(find.byKey(const Key('entry-length-slider'))).onChanged!(48);
-      tester.widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch'))).onChanged!(false);
+      await tester.enterText(find.byKey(const Key('generator-count')), '48');
+      tester.widget<DesktopOption>(find.byKey(const Key('generator-symbols'))).onChanged!(false);
       await tester.pump();
-      await tester.tap(find.text(t.cancel).last);
+      await tester.tap(find.byTooltip(t.generatorClose));
       await tester.pumpAndSettle();
       expect(password(), original);
       await tester.tap(find.byKey(const Key('entry-password-options')));
       await tester.pumpAndSettle();
-      tester.widget<Slider>(find.byKey(const Key('entry-length-slider'))).onChanged!(48);
-      tester.widget<SwitchListTile>(find.byKey(const Key('entry-symbols-switch'))).onChanged!(false);
+      await tester.enterText(find.byKey(const Key('generator-count')), '48');
+      tester.widget<DesktopOption>(find.byKey(const Key('generator-symbols'))).onChanged!(false);
       await tester.pump();
-      await tester.tap(find.byKey(const Key('apply-password-options')));
+      await tester.tap(find.byKey(const Key('generator-apply')));
       await tester.pumpAndSettle();
       expect(password(), matches(RegExp(r'^[a-zA-Z0-9]{48}$')));
       expect(find.text(t.vaultPasswordLength(length: 48)), findsOneWidget);
@@ -154,7 +155,10 @@ void main() {
         () => VaultCipher.create('Synthetic password 1!'),
       ))!;
       await mount(tester, OrganizationStore(hidden));
-      await tester.tap(find.text(t.generator));
+      await tester.tap(find.byKey(const Key('add-entry')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('entry-password-options')));
+      await tester.tap(find.byKey(const Key('entry-password-options')));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(minutes: 2));
       await tester.pumpAndSettle();

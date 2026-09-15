@@ -14,6 +14,7 @@ void main() {
     expect(text.read, throwsStateError);
     expect(() => text.isEmpty, throwsStateError);
     expect(bytes.read, throwsStateError);
+    expect(bytes.copyProtectedMemory, throwsStateError);
     expect(() => bytes.ownFor(SecretLifetime()), throwsStateError);
     text.destroy();
     text.destroy();
@@ -37,6 +38,7 @@ void main() {
       value.destroy();
       value.destroy();
       expect(value.read, throwsStateError);
+      expect(value.copyProtectedMemory, throwsStateError);
     }
   });
 

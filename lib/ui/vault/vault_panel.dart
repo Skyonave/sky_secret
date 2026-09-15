@@ -1,3 +1,5 @@
+import '../shared/desktop_tooltip.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -11,6 +13,7 @@ import '../../core/crypto/crypto.dart';
 import '../../core/desktop/windows/file_viewer_manager.dart';
 import '../../core/desktop/windows/totp_window_manager.dart';
 import '../../core/desktop/totp_session.dart';
+import '../../core/desktop/file_drag_controller.dart';
 import '../../core/os/windows/ssh_connections.dart';
 import '../../core/settings/vault_preferences.dart';
 import '../../core/settings/vault_tree_preferences.dart';
@@ -27,8 +30,14 @@ import '../../i18n/translations.g.dart';
 import '../github/github_dialog.dart';
 import '../search/vault_search_presenter.dart';
 import '../shared/inset_menu_item.dart';
+import '../shared/desktop_option.dart';
+import '../shared/desktop_menu.dart';
+import '../shared/save_file_dialog.dart';
 import '../shared/input/sensitive_text_editing.dart';
-import 'dialogs/password_options_dialog.dart';
+import '../generator/generator_dialog.dart';
+import '../generator/generator_service.dart';
+import '../../core/settings/generator_preferences.dart';
+
 import 'dialogs/vault_name_dialog.dart';
 import 'dialogs/vault_password_dialog.dart';
 import 'controllers/vault_entry_controller.dart';
@@ -49,12 +58,14 @@ part 'widgets/_vault_entry_card.dart';
 part 'dialogs/_vault_text_file_dialog.dart';
 
 class VaultPanel extends StatefulWidget {
+  final GeneratorService? generatorService;
   final bool active;
   final VaultStore? store;
   final VaultCatalog? catalog;
   final VaultPreferences? preferences;
   final GitHubBackup? githubBackup;
   final ValueChanged<bool>? onSshAuthorizationChanged;
+  final ValueChanged<bool>? onFileDragChanged;
   final Future<bool> Function(String) copySecret;
   final Future<void> Function() clearClipboard;
   final Future<void> Function()? onSearchDismissed;
@@ -65,11 +76,13 @@ class VaultPanel extends StatefulWidget {
   const VaultPanel({
     super.key,
     this.active = true,
+    this.generatorService,
     this.store,
     this.catalog,
     this.preferences,
     this.githubBackup,
     this.onSshAuthorizationChanged,
+    this.onFileDragChanged,
     required this.copySecret,
     required this.clearClipboard,
     this.onSearchDismissed,
@@ -83,6 +96,35 @@ class VaultPanel extends StatefulWidget {
 }
 
 class VaultPanelState extends State<VaultPanel> {
+  late final _generatorService = widget.generatorService ?? GeneratorService(GeneratorPreferences());
+
+  int _generatorEpoch = 0;
+  int _generationRequest = 0;
+
+  bool get _hasPasswordEditor => _editor.active && !_editor.isTotp;
+
+  void _cancelPasswordGeneration() {
+    _generatorEpoch++;
+    _generationRequest++;
+  }
+
+  void _useGeneratedPassword(String value, {required int epoch}) {
+    if (!mounted ||
+        epoch != _generatorEpoch ||
+        _busy ||
+        !_hasPasswordEditor ||
+        _session == null ||
+        _session!.isLocked) {
+      return;
+    }
+    _generationRequest++;
+    setState(() {
+      _editor.applyGeneratedPassword(value);
+      _error = null;
+    });
+    _touchActivity();
+  }
+
   late final VaultSessionController _lifecycle;
   late final VaultSyncController _sync;
   bool _loading = true;
@@ -95,6 +137,8 @@ class VaultPanelState extends State<VaultPanel> {
   bool _renamingVault = false;
   bool _renameInvalid = false;
   final _treeKey = GlobalKey<_VaultTreeState>();
+  final _browserScroll = ScrollController();
+  final _formScroll = ScrollController(keepScrollOffset: false);
   final _editor = VaultEntryController();
   final _browser = VaultBrowserController();
   final _searchWindow = VaultSearchPresenter();
@@ -115,6 +159,8 @@ class VaultPanelState extends State<VaultPanel> {
   late final SshConnections _sshConnections;
   final _viewers = FileViewerManager();
   final _codesWindow = TotpWindowManager();
+  late final _fileDrag = FileDragController(onActiveChanged: (active) => widget.onFileDragChanged?.call(active));
+  ({int pointer, Offset origin, VaultEntry entry})? _externalDragCandidate;
   static const _systemLock = MethodChannel('skysecret/system_lock');
   bool _sensitiveDialogOpen = false;
 
@@ -400,11 +446,19 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   void onWindowHidden() {
+    _cancelPasswordGeneration();
+    _externalDragCandidate = null;
+    _fileDrag.cancel();
     _codesWindow.close();
     _searchWindow.close();
-    if (!mounted || !_lockWhenHidden) return;
+    DesktopMenuObserver.dismissAll();
+    if (!mounted) return;
+    if (!_lockWhenHidden) {
+      setState(() {});
+      return;
+    }
     Navigator.of(context).popUntil((route) => route.isFirst);
-    _lock();
+    _lock(clearClipboard: false);
   }
 
   void onWindowShown() {
@@ -445,6 +499,7 @@ class VaultPanelState extends State<VaultPanel> {
     super.didUpdateWidget(oldWidget);
     if (widget.active == false) _searchWindow.close();
     if (widget.active == false) _codesWindow.close();
+    if (widget.active == false) _fileDrag.cancel();
     if (widget.active && oldWidget.active == false) onWindowShown();
   }
 
@@ -548,17 +603,16 @@ class VaultPanelState extends State<VaultPanel> {
     final session = _session;
     if (session == null) return;
     await _operation(() async {
-      final destination = await getSaveLocation(
+      final destination = await selectSaveFile(
+        context: context,
         suggestedName: 'vault-backup-${DateTime.now().millisecondsSinceEpoch}.smv',
-        acceptedTypeGroups: [
-          XTypeGroup(label: t.appName, extensions: const ['smv']),
-        ],
+        requireExtension: true,
+        allowed: () => mounted && !session.isLocked && _session == session,
       );
       if (!mounted || destination == null || session.isLocked || _session != session) {
         return;
       }
-      final path = destination.path.toLowerCase().endsWith('.smv') ? destination.path : '${destination.path}.smv';
-      await _store!.exportTo(session, File(path));
+      await _store!.exportTo(session, destination);
       if (mounted && !session.isLocked) _notice(t.vaultExportDone);
     });
   }
@@ -646,11 +700,15 @@ class VaultPanelState extends State<VaultPanel> {
     final session = _session;
     if (session == null) return;
     await _operation(() async {
-      final destination = await getSaveLocation(suggestedName: attachment.name);
+      final destination = await selectSaveFile(
+        context: context,
+        suggestedName: attachment.name,
+        allowed: () => mounted && !session.isLocked && _session == session,
+      );
       if (!mounted || destination == null || session.isLocked || _session != session) {
         return;
       }
-      await VaultStore.extract(session, attachment, File(destination.path));
+      await VaultStore.extract(session, attachment, destination);
       if (mounted && !session.isLocked) _notice(t.vaultAttachmentSaved);
     });
   }
@@ -910,6 +968,9 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   void _resetBrowser() {
+    _cancelPasswordGeneration();
+    _externalDragCandidate = null;
+    _fileDrag.cancel();
     _searchWindow.close();
     _browser.clear();
     _deletions.clear();
@@ -922,6 +983,23 @@ class VaultPanelState extends State<VaultPanel> {
   void _onPointerActivity(PointerEvent event) {
     _touchActivity();
     if (event is PointerDownEvent) _updateSearchHandler();
+    final candidate = _externalDragCandidate;
+    if (candidate == null || event.pointer != candidate.pointer) return;
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _externalDragCandidate = null;
+      return;
+    }
+    if (event is! PointerMoveEvent || event.buttons != kPrimaryMouseButton || !mounted) return;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final position = overlay.globalToLocal(event.position);
+    if ((Offset.zero & overlay.size).contains(position) || (event.position - candidate.origin).distanceSquared < 16) {
+      return;
+    }
+    _externalDragCandidate = null;
+    GestureBinding.instance.cancelPointer(event.pointer);
+    scheduleMicrotask(() {
+      if (mounted) unawaited(_dragFileOut(candidate.entry));
+    });
   }
 
   void _touchActivity() {
@@ -999,17 +1077,6 @@ class VaultPanelState extends State<VaultPanel> {
     }
   }
 
-  String _vaultSyncHelp() {
-    final backup = widget.githubBackup!;
-    final session = _session;
-    if (!backup.isManual(_selectedVaultId)) return t.syncVaultHelp;
-    final date = backup.lastVaultSync(_selectedVaultId);
-    final state = session != null && backup.matchesLastSync(_selectedVaultId, session)
-        ? t.syncLocalConfirmed
-        : t.syncLocalPending;
-    return '$state${date == null ? '' : '\n${t.syncVaultChecked(date: date.toLocal().toString().split('.').first)}'}\n${t.syncManualOnly}';
-  }
-
   Future<void> _showHistory() async {
     if (_busy || _editor.active || _catalog == null) return;
     late List<({VaultReference vault, File file, DateTime date})> snapshots;
@@ -1042,7 +1109,7 @@ class VaultPanelState extends State<VaultPanel> {
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(4),
                               ),
                               contentPadding: const EdgeInsets.all(12),
                               title: Text(_vaultLabel(item.vault)),
@@ -1102,10 +1169,10 @@ class VaultPanelState extends State<VaultPanel> {
                                 ),
                                 child: ExpansionTile(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   collapsedShape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   tilePadding: const EdgeInsets.all(12),
                                   childrenPadding: const EdgeInsets.all(12),
@@ -1137,7 +1204,7 @@ class VaultPanelState extends State<VaultPanel> {
                                         ),
                                         decoration: InputDecoration(
                                           labelText: t.vaultEntryPassword,
-                                          suffixIcon: IconButton(
+                                          suffixIcon: DesktopIconButton(
                                             tooltip: t.syncShowPassword,
                                             onPressed: () => update(() {
                                               if (!revealed.add(entry.id)) {
@@ -1239,49 +1306,56 @@ class VaultPanelState extends State<VaultPanel> {
           .where((folder) => folder.id == _editor.folderId)
           .map((folder) => _locationName(session, folder))
           .firstOrNull;
-      return PopupMenuButton<String>(
-        key: ValueKey('entry-folder-${_editor.id ?? 'new'}'),
-        enabled: !_busy,
-        tooltip: t.vaultLocation,
-        position: PopupMenuPosition.under,
-        offset: const Offset(0, 6),
-        borderRadius: BorderRadius.circular(12),
-        constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
-        onSelected: (value) => setState(() => _editor.folderId = value.isEmpty ? null : value),
-        itemBuilder: (context) => [
-          InsetMenuItem(
-            value: '',
-            label: t.vaultRoot,
-            icon: Icons.folder_outlined,
-            selected: _editor.folderId == null,
-          ),
-          for (final folder in session.folders)
+      return DesktopTooltip(
+        message: t.vaultLocation,
+        child: PopupMenuButton<String>(
+          key: ValueKey('entry-folder-${_editor.id ?? 'new'}'),
+          enabled: !_busy,
+          tooltip: '',
+          routeSettings: const RouteSettings(name: DesktopMenuObserver.routeName),
+          popUpAnimationStyle: AnimationStyle.noAnimation,
+          requestFocus: true,
+          onOpened: DesktopTooltip.dismissAll,
+          position: PopupMenuPosition.under,
+          offset: const Offset(0, 6),
+          borderRadius: BorderRadius.circular(4),
+          constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
+          onSelected: (value) => setState(() => _editor.folderId = value.isEmpty ? null : value),
+          itemBuilder: (context) => [
             InsetMenuItem(
-              value: folder.id,
-              label: _locationName(session, folder),
+              value: '',
+              label: t.vaultRoot,
               icon: Icons.folder_outlined,
-              selected: _editor.folderId == folder.id,
+              selected: _editor.folderId == null,
             ),
-        ],
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: t.vaultLocation,
-            enabled: !_busy,
-            isDense: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  selectedName ?? t.vaultRoot,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            for (final folder in session.folders)
+              InsetMenuItem(
+                value: folder.id,
+                label: _locationName(session, folder),
+                icon: Icons.folder_outlined,
+                selected: _editor.folderId == folder.id,
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.expand_more_rounded, size: 20),
-            ],
+          ],
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: t.vaultLocation,
+              enabled: !_busy,
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selectedName ?? t.vaultRoot,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.expand_more_rounded, size: 20),
+              ],
+            ),
           ),
         ),
       );
@@ -1293,66 +1367,76 @@ class VaultPanelState extends State<VaultPanel> {
     return parent == null ? folder.name : '${parent.name} / ${folder.name}';
   }
 
-  Widget _vaultSwitcher() => PopupMenuButton<String>(
-    key: const Key('vault-switcher'),
-    tooltip: t.vaultChoose,
-    enabled: !_busy,
-    icon: const Icon(Icons.expand_more_rounded, size: 21),
-    position: PopupMenuPosition.under,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    constraints: const BoxConstraints(minWidth: 240, maxWidth: 300),
-    onSelected: (id) => switch (id) {
-      'import' => _importVault(),
-      'delete' => _deleteVault(),
-      'history' => _showHistory(),
-      'conflicts' => _showConflicts(),
-      _ => _selectVault(id == 'new' ? null : id),
-    },
-    itemBuilder: (_) => [
-      for (final vault in _vaults)
-        InsetMenuItem(
-          value: vault.id,
-          label: _vaultLabel(vault),
-          icon: vault.id == _selectedVaultId ? Icons.check_rounded : Icons.lock_outline_rounded,
-          selected: vault.id == _selectedVaultId,
-        ),
-      const PopupMenuDivider(),
-      InsetMenuItem(
-        key: const Key('new-vault'),
-        value: 'new',
-        label: t.vaultNew,
-        icon: Icons.add_rounded,
-      ),
-      InsetMenuItem(
-        value: 'import',
-        label: t.vaultImport,
-        icon: Icons.file_open_outlined,
-      ),
-      InsetMenuItem(
-        value: 'history',
-        label: t.vaultHistory,
-        icon: Icons.history_rounded,
-      ),
-      if (_session != null && !_editor.active)
-        InsetMenuItem(
-          value: 'conflicts',
-          label: t.syncReviewConflicts,
-          icon: Icons.difference_outlined,
-        ),
-      if (_exists && !_editor.active && !_renamingVault) ...[
+  Widget _vaultSwitcher() => DesktopTooltip(
+    message: t.vaultChoose,
+    child: PopupMenuButton<String>(
+      key: const Key('vault-switcher'),
+      tooltip: '',
+      routeSettings: const RouteSettings(name: DesktopMenuObserver.routeName),
+      popUpAnimationStyle: AnimationStyle.noAnimation,
+      requestFocus: true,
+      onOpened: DesktopTooltip.dismissAll,
+      enabled: !_busy,
+      icon: const Icon(Icons.expand_more_rounded, size: 21),
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      constraints: const BoxConstraints(minWidth: 240, maxWidth: 300),
+      onSelected: (id) => switch (id) {
+        'import' => _importVault(),
+        'delete' => _deleteVault(),
+        'history' => _showHistory(),
+        'conflicts' => _showConflicts(),
+        _ => _selectVault(id == 'new' ? null : id),
+      },
+      itemBuilder: (_) => [
+        for (final vault in _vaults)
+          InsetMenuItem(
+            value: vault.id,
+            label: _vaultLabel(vault),
+            icon: vault.id == _selectedVaultId ? Icons.check_rounded : Icons.lock_outline_rounded,
+            selected: vault.id == _selectedVaultId,
+          ),
         const PopupMenuDivider(),
         InsetMenuItem(
-          key: const Key('delete-vault'),
-          value: 'delete',
-          label: t.vaultDeleteVault,
-          icon: Icons.delete_outline_rounded,
-          destructive: true,
+          key: const Key('new-vault'),
+          value: 'new',
+          label: t.vaultNew,
+          icon: Icons.add_rounded,
         ),
+        InsetMenuItem(
+          value: 'import',
+          label: t.vaultImport,
+          icon: Icons.file_open_outlined,
+        ),
+        InsetMenuItem(
+          value: 'history',
+          label: t.vaultHistory,
+          icon: Icons.history_rounded,
+        ),
+        if (_session != null && !_editor.active)
+          InsetMenuItem(
+            value: 'conflicts',
+            label: t.syncReviewConflicts,
+            icon: Icons.difference_outlined,
+          ),
+        if (_exists && !_editor.active && !_renamingVault) ...[
+          const PopupMenuDivider(),
+          InsetMenuItem(
+            key: const Key('delete-vault'),
+            value: 'delete',
+            label: t.vaultDeleteVault,
+            icon: Icons.delete_outline_rounded,
+            destructive: true,
+          ),
+        ],
       ],
-    ],
+    ),
   );
 
-  void _clearEditor() => _editor.clear();
+  void _clearEditor() {
+    _generationRequest++;
+    _editor.clear();
+  }
 
   void _edit([
     VaultEntry? entry,
@@ -1361,25 +1445,41 @@ class VaultPanelState extends State<VaultPanel> {
     bool authenticator = false,
   ]) => setState(() {
     _error = null;
+    _generationRequest++;
     _editor.start(entry: entry, parentId: folderId, ssh: ssh, authenticator: authenticator);
+    if (entry == null && !authenticator) unawaited(_generateEntryPassword());
   });
 
   Future<void> _passwordOptions() async {
-    if (_busy) return;
-    final options = await showDialog<PasswordOptions>(
+    if (_busy || !_hasPasswordEditor) return;
+    final epoch = _generatorEpoch;
+    final value = await showGenerator(
       context: context,
-      builder: (_) => PasswordOptionsDialog(
-        options: (length: _editor.generationLength, symbols: _editor.generationSymbols),
-      ),
+      service: _generatorService,
+      copy: widget.copySecret,
+      actionLabel: t.generatorUseEntry,
     );
-    if (!mounted || options == null || !_editor.active || _session == null || _busy) {
-      return;
+    if (value != null) _useGeneratedPassword(value, epoch: epoch);
+  }
+
+  Future<void> _generateEntryPassword() async {
+    if (_busy || !_hasPasswordEditor || _session == null || _session!.isLocked) return;
+    final epoch = _generatorEpoch;
+    final request = ++_generationRequest;
+    final previous = _editor.password.text;
+    try {
+      final options = await _generatorService.preferences.load();
+      final value = await _generatorService.generate(options);
+      if (mounted &&
+          epoch == _generatorEpoch &&
+          request == _generationRequest &&
+          _hasPasswordEditor &&
+          _editor.password.text == previous) {
+        _useGeneratedPassword(value, epoch: epoch);
+      }
+    } catch (_) {
+      if (mounted && epoch == _generatorEpoch && request == _generationRequest) _notice(t.generatorFailed);
     }
-    setState(() {
-      _editor.generationLength = options.length;
-      _editor.generationSymbols = options.symbols;
-      _editor.generate();
-    });
   }
 
   Future<void> _save() async {
@@ -1665,7 +1765,9 @@ class VaultPanelState extends State<VaultPanel> {
     }
   }
 
-  void _lock() {
+  void _lock({bool clearClipboard = true}) {
+    DesktopTooltip.dismissAll();
+    DesktopMenuObserver.dismissAll();
     _resetBrowser();
     _sshConnections.revoke();
     if (_sensitiveDialogOpen && mounted) {
@@ -1682,7 +1784,7 @@ class VaultPanelState extends State<VaultPanel> {
     _copyNoticeTimer?.cancel();
     _copyNotice = null;
     _treeKey.currentState?.stopDragging();
-    unawaited(widget.clearClipboard());
+    if (clearClipboard) unawaited(widget.clearClipboard());
     setState(() {
       _busy = false;
       _loading = false;
@@ -1697,6 +1799,8 @@ class VaultPanelState extends State<VaultPanel> {
 
   @override
   void dispose() {
+    _cancelPasswordGeneration();
+    _fileDrag.dispose();
     FocusManager.instance.removeListener(_updateSearchHandler);
     widget.onSearchHandlerChanged?.call(null);
     _searchWindow.dispose();
@@ -1716,6 +1820,8 @@ class VaultPanelState extends State<VaultPanel> {
     HardwareKeyboard.instance.removeHandler(_onKeyActivity);
     GestureBinding.instance.pointerRouter.removeGlobalRoute(_onPointerActivity);
     _treeKey.currentState?.stopDragging();
+    _browserScroll.dispose();
+    _formScroll.dispose();
     for (final controller in [
       _master,
       _vaultName,
@@ -1777,6 +1883,29 @@ class VaultPanelState extends State<VaultPanel> {
     createTextFile: _createTextFile,
     move: _moveItem,
   );
+
+  Future<void> _dragFileOut(VaultEntry entry) async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked || entry.isDeleted || !entry.isFile) return;
+    DesktopTooltip.dismissAll();
+    DesktopMenuObserver.dismissAll();
+    _touchActivity();
+    try {
+      await _fileDrag.start(
+        attachment: entry.attachments.single,
+        allowed: () =>
+            mounted &&
+            widget.active &&
+            !_busy &&
+            _session == session &&
+            !session.isLocked &&
+            session.entries.contains(entry) &&
+            !entry.isDeleted,
+      );
+    } catch (_) {
+      if (mounted && _session == session && !session.isLocked) _notice(t.vaultFileDragFailed);
+    }
+  }
 
   Future<void> _copyEntry(VaultEntry entry) async {
     final session = _session;
@@ -1852,76 +1981,127 @@ class VaultPanelState extends State<VaultPanel> {
           : !entry.hasPassword
           ? null
           : () => _copyEntry(entry),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (entry.isDeleted == false) ...[
-            IconButton(
+      trailing: entry.isDeleted
+          ? const SizedBox(width: 32)
+          : DesktopIconButton(
               tooltip: entry.isFavorite ? t.browserUnfavorite : t.browserFavorite,
-              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: const EdgeInsets.all(7),
               onPressed: _busy ? null : () => _favoriteEntry(entry),
               icon: Icon(entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded, size: 18),
             ),
-            const SizedBox(width: 4),
-          ],
-          IconButton(
-            key: ValueKey(
-              '${entry.isFile ? 'export-file' : 'edit-entry'}-${entry.id}',
-            ),
-            tooltip: entry.isDeleted
-                ? t.browserRestore
-                : entry.isFile
-                ? t.vaultSaveAttachment
-                : t.vaultEditEntry,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            visualDensity: VisualDensity.standard,
-            padding: const EdgeInsets.all(8),
-            onPressed: _busy
-                ? null
-                : entry.isDeleted
-                ? () => _restoreEntry(entry.id)
-                : entry.isFile
-                ? () => _extractAttachment(entry.attachments.single)
-                : () => _edit(entry),
-            icon: Icon(
-              entry.isDeleted
-                  ? Icons.restore_rounded
-                  : entry.isFile
-                  ? Icons.save_alt_rounded
-                  : Icons.edit_outlined,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            key: ValueKey('delete-entry-${entry.id}'),
-            tooltip: entry.isDeleted
-                ? t.browserDeleteForever
-                : entry.isFile
-                ? t.vaultDeleteFile
-                : t.vaultDeleteEntry,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            visualDensity: VisualDensity.standard,
-            padding: const EdgeInsets.all(8),
-            onPressed: _busy ? null : () => entry.isDeleted ? _purgeEntry(entry) : _deleteEntry(entry),
-            icon: const Icon(Icons.delete_outline_rounded, size: 18),
-          ),
-        ],
+    );
+    return GestureDetector(
+      onSecondaryTapUp: (details) => _entryMenu(entry, details.globalPosition),
+      child: DesktopTooltip(
+        message: entry.isDeleted
+            ? t.browserTrashHelp
+            : entry.isTotp
+            ? t.totpTitle
+            : entry.isFile
+            ? t.vaultFileHint
+            : entry.isSsh
+            ? t.sshConnect
+            : t.vaultEntryHint,
+        child: Listener(
+          onPointerDown: (event) {
+            if (!_busy &&
+                entry.isFile &&
+                !entry.isDeleted &&
+                event.kind == PointerDeviceKind.mouse &&
+                event.buttons == kPrimaryMouseButton) {
+              _externalDragCandidate = (pointer: event.pointer, origin: event.position, entry: entry);
+            }
+          },
+          child: card,
+        ),
       ),
     );
-    return Tooltip(
-      message: entry.isDeleted
-          ? t.browserTrashHelp
-          : entry.isTotp
-          ? t.totpTitle
-          : entry.isFile
-          ? t.vaultFileHint
-          : entry.isSsh
-          ? t.sshConnect
-          : t.vaultEntryHint,
-      child: card,
+  }
+
+  Future<void> _entryMenu(VaultEntry entry, Offset position) async {
+    final session = _session;
+    if (_busy || session == null || session.isLocked) return;
+    final action = await showDesktopMenu<String>(
+      context: context,
+      position: position,
+      items: entry.isDeleted
+          ? [
+              InsetMenuItem(value: 'restore', label: t.browserRestore, icon: Icons.restore_rounded),
+              InsetMenuItem(
+                value: 'purge',
+                label: t.browserDeleteForever,
+                icon: Icons.delete_forever_outlined,
+                destructive: true,
+              ),
+            ]
+          : [
+              if (entry.isFile || entry.isSsh || entry.isTotp || entry.hasPassword)
+                InsetMenuItem(
+                  value: 'use',
+                  label: entry.isFile
+                      ? t.searchOpenFile
+                      : entry.isSsh
+                      ? t.sshConnect
+                      : entry.isTotp
+                      ? t.totpTitle
+                      : t.copy,
+                  icon: entry.isFile
+                      ? Icons.description_outlined
+                      : entry.isSsh
+                      ? Icons.terminal_rounded
+                      : entry.isTotp
+                      ? Icons.timer_outlined
+                      : Icons.copy_rounded,
+                ),
+              InsetMenuItem(
+                value: 'edit',
+                label: entry.isFile ? t.vaultSaveAttachment : t.vaultEditEntry,
+                icon: entry.isFile ? Icons.save_alt_rounded : Icons.edit_outlined,
+              ),
+              InsetMenuItem(
+                value: 'favorite',
+                label: entry.isFavorite ? t.browserUnfavorite : t.browserFavorite,
+                icon: entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+              ),
+              const PopupMenuDivider(),
+              InsetMenuItem(
+                value: 'delete',
+                label: entry.isFile ? t.vaultDeleteFile : t.vaultDeleteEntry,
+                icon: Icons.delete_outline_rounded,
+                destructive: true,
+              ),
+            ],
     );
+    if (!mounted || _busy || _session != session || session.isLocked || session.entries.contains(entry) == false) {
+      return;
+    }
+    switch (action) {
+      case 'restore':
+        await _restoreEntry(entry.id);
+      case 'purge':
+        await _purgeEntry(entry);
+      case 'use':
+        if (entry.isFile) {
+          await _openFile(entry);
+        } else if (entry.isSsh) {
+          await _connectSsh(entry);
+        } else if (entry.isTotp) {
+          await _openCodes();
+        } else {
+          await _copyEntry(entry);
+        }
+      case 'edit':
+        if (entry.isFile) {
+          await _extractAttachment(entry.attachments.single);
+        } else {
+          _edit(entry);
+        }
+      case 'favorite':
+        await _favoriteEntry(entry);
+      case 'delete':
+        await _deleteEntry(entry);
+    }
   }
 
   String get _heading {
@@ -1934,118 +2114,120 @@ class VaultPanelState extends State<VaultPanel> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateSearchHandler());
     if (_loading) return const Center(child: CircularProgressIndicator());
     final session = _session;
+    final content = _workspace(session);
     return SensitiveClipboardScope(
       copy: widget.copySecret,
       child: Listener(
         onPointerDown: (_) => _touchActivity(),
         onPointerHover: (_) => _touchActivity(),
         onPointerSignal: (_) => _touchActivity(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _VaultHeader(
-              title: _heading,
-              unlocked: session != null,
-              renaming: _renamingVault,
-              renameName: _renameName,
-              busy: _busy,
-              renameInvalid: _renameInvalid,
-              savingPreferences: _savingPreferences,
-              showSettings: _editor.active == false && _renamingVault == false,
-              switcher: _catalog != null && _editor.active == false && _renamingVault == false
-                  ? _vaultSwitcher()
-                  : null,
-              onRename: _renameVault,
-              onStartRename: _startRenameVault,
-              onCancelRename: () => setState(() {
-                _renamingVault = false;
-                _renameName.clear();
-              }),
-              onSettings: _showPreferences,
-              onLock: _lock,
-            ),
-            const SizedBox(height: 12),
-            if (_error == 'read') ...[
-              Text(_errorText),
-              TextButton(onPressed: _load, child: Text(t.retry)),
-            ] else if (session == null) ...[
-              _VaultUnlockForm(
-                exists: _exists,
-                busy: _busy,
-                vaultName: _vaultName,
-                master: _master,
-                confirmation: _confirmation,
-                onOpen: _open,
-              ),
-            ] else if (_editor.active) ...[
-              _VaultEntryEditor(
-                draft: _editor,
-                busy: _busy,
-                isSsh: _editor.isSsh,
-                locationSelector: _folderSelector(session),
-                onSave: _save,
-                onCancel: () => setState(() {
-                  _clearEditor();
-                  _error = null;
-                }),
-                onDelete: _editor.id == null
-                    ? null
-                    : () => _deleteEntry(
-                        session.entries.firstWhere((entry) => entry.id == _editor.id),
-                      ),
-                onPasswordOptions: _passwordOptions,
-                onGenerate: () => setState(() {
-                  _editor.generate();
-                }),
-              ),
-            ] else ...[
-              _VaultBrowser(
-                pendingEntries: _pendingEntries,
-                collapsed: _collapsedFolders,
-                onCollapsedChanged: () {
-                  setState(() {});
-                  _saveTreeState();
-                },
-                session: session,
-
-                tree: _folderTree(session),
-                entryCard: _entryCard,
-                pendingIds: _deletions.ids,
-              ),
-
-              _VaultCreateActions(
-                busy: _busy,
-                onEntry: () => _edit(),
-                onSsh: () => _edit(null, null, true),
-                onTotp: () => _edit(null, null, false, true),
-                onFile: _addFile,
-                onTextFile: _createTextFile,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.githubBackup?.signedIn == true ? _vaultSyncHelp() : t.vaultLocalOnly,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            if (_busy && !_waitingForPassword)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: LinearProgressIndicator(),
-              ),
-            if (_error != null && _error != 'read')
+        child: LayoutBuilder(
+          builder: (context, constraints) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  _errorText,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+                child: _VaultHeader(
+                  title: _heading,
+                  unlocked: session != null,
+                  renaming: _renamingVault,
+                  renameName: _renameName,
+                  busy: _busy,
+                  renameInvalid: _renameInvalid,
+                  savingPreferences: _savingPreferences,
+                  showSettings: _editor.active == false && _renamingVault == false,
+                  switcher: _catalog != null && _editor.active == false && _renamingVault == false
+                      ? _vaultSwitcher()
+                      : null,
+                  onRename: _renameVault,
+                  onStartRename: _startRenameVault,
+                  onCancelRename: () => setState(() {
+                    _renamingVault = false;
+                    _renameName.clear();
+                  }),
+                  onSettings: _showPreferences,
+                  onLock: _lock,
                 ),
               ),
-          ],
+              if (session != null && _editor.active == false)
+                _VaultCreateActions(
+                  busy: _busy,
+                  onEntry: () => _edit(),
+                  onSsh: () => _edit(null, null, true),
+                  onTotp: () => _edit(null, null, false, true),
+                  onFile: _addFile,
+                  onTextFile: _createTextFile,
+                  onSearch: _requestSearch,
+                ),
+              const Divider(height: 1),
+              if (constraints.hasBoundedHeight) Expanded(child: content) else content,
+              if (_busy && !_waitingForPassword) const LinearProgressIndicator(minHeight: 2),
+              if (_error != null && _error != 'read')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
+                  child: Text(_errorText, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _workspace(VaultSession? session) => Scrollbar(
+    controller: session != null && _editor.active == false ? _browserScroll : _formScroll,
+    child: SingleChildScrollView(
+      controller: session != null && _editor.active == false ? _browserScroll : _formScroll,
+      key: const Key('vault-workspace'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_error == 'read') ...[
+            Text(_errorText),
+            TextButton(onPressed: _load, child: Text(t.retry)),
+          ] else if (session == null) ...[
+            _VaultUnlockForm(
+              exists: _exists,
+              busy: _busy,
+              vaultName: _vaultName,
+              master: _master,
+              confirmation: _confirmation,
+              onOpen: _open,
+            ),
+          ] else if (_editor.active)
+            _VaultEntryEditor(
+              draft: _editor,
+              busy: _busy,
+              isSsh: _editor.isSsh,
+              locationSelector: _folderSelector(session),
+              onSave: _save,
+              onCancel: () => setState(() {
+                _clearEditor();
+                _error = null;
+              }),
+              onDelete: _editor.id == null
+                  ? null
+                  : () => _deleteEntry(session.entries.firstWhere((entry) => entry.id == _editor.id)),
+              onPasswordOptions: _passwordOptions,
+              onGenerate: () => unawaited(_generateEntryPassword()),
+            )
+          else ...[
+            _VaultBrowser(
+              pendingEntries: _pendingEntries,
+              collapsed: _collapsedFolders,
+              onCollapsedChanged: () {
+                setState(() {});
+                _saveTreeState();
+              },
+              session: session,
+              tree: _folderTree(session),
+              entryCard: _entryCard,
+              pendingIds: _deletions.ids,
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 }

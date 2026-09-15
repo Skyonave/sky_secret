@@ -1,54 +1,79 @@
 # SkySecret
 
-[Русский](#русский) · [Releases](https://github.com/Skyonave/sky_secret/releases)
+**A private workflow for secrets, files and SSH on Windows.**
 
-A portable password and file manager for Windows. Works offline, lives in the system tray and opens with **Shift+Space**. Built with Flutter and Dart.
+[Русский](#русский) · [Download](https://github.com/Skyonave/sky_secret/releases) · [Security](SECURITY.md)
 
-<p align="center">
-  <img src="assets/screenshots/vault-en.png" width="300" alt="SkySecret vault with demo entries and files">
-  <img src="assets/screenshots/generator-en.png" width="300" alt="SkySecret password generator">
-</p>
+Local first, offline, one portable EXE. **Shift+Space → your vault → back to work.** SkySecret focuses on daily work with secrets; it is not intended as a KeePass replacement.
 
-- Multiple vaults with separate master passwords, **Argon2id + AES-256-GCM** encryption, password generation and automatic locking.
-- Secrets and files organized into sections and folders, with drag-and-drop, saved expansion state and new entries at the top.
-- Open the manager with **Shift+Space**, unlock your vault, then press **F** to show a compact search panel above it, without clicking the manager first. Type a name, username, server or folder; select with **↑/↓ + Enter** or a click. **Esc** closes search. Change both shortcuts in **Keyboard shortcuts**; search is disabled while typing in the manager. Starred entries appear in a top section. **Undo** stays in the deleted card for **10 seconds**, until the vault locks. Folder actions are available by right-click.
-- Create `.txt` files in the vault and edit text in separate windows; **Ctrl+S** saves changes.
-- Saved SSH connections through CMD and Windows OpenSSH.
-- Encrypted `.smv` import/export, optional GitHub backups and manual sync, conflict review, history and recovery.
-- Russian and English interface; configurable visibility in screen recordings.
-- Verification codes (TOTP): choose **Add authenticator**, enter a name and paste the setup key or `otpauth://` link. Codes appear as separate tiles beside the manager, aligned at the bottom and growing upward. Click a tile to copy; use the wheel or arrows for more codes. Click an authenticator entry to open the tiles again; Esc hides them. Codes work offline; keep the computer clock accurate. Delete the authenticator entry to remove it. QR import is not supported.
+## Available now
 
-Run **SkySecret-<version>-windows-x64.exe**, open the manager from the tray and create a vault. **There is no master-password reset.** GitHub is optional; its connection dialog guides repository and token setup. Save edits before hiding the manager: hiding locks it by default.
+- **Encrypted vaults:** passwords, notes, files, SSH and TOTP. Multiple vaults, folders and favorites.
+- **Desktop controls:** compact tray window, search with **F**, right-click menus and **Ctrl+S** in editors.
+- **Drag files both ways:** into the vault, or onto the desktop / File Explorer to export a copy. Exported copies are unencrypted.
+- **Text editing:** create `.txt` files and edit text in separate windows.
+- **Generator inside entries:** passwords, English passphrases, character rules and saved settings.
+- **Backup and sync:** encrypted `.smv` import/export, local history, optional GitHub backups and manual synchronization with conflict review.
+- **Quick actions:** copy secrets, use TOTP tiles and start saved SSH connections through Windows OpenSSH.
 
-> We work to protect your data, but cannot guarantee its security or recovery. Keep verified independent backups.
+### Preview · synthetic data
 
-Before saving a shared vault in **0.3.1**, update every device to **0.3.1 or later**. Older versions cannot open the updated vault. Keep a verified independent backup before upgrading.
+| Vault workflow | Passwords and passphrases |
+| --- | --- |
+| ![Vault workflow](assets/previews/workflow.gif) | ![Generator](assets/previews/generator.gif) |
 
-Previously created vaults remain readable, including TOTP stored with a password or SSH entry. These existing records keep their fields when saved. New authenticators use a separate entry type.
+## Start
 
-Adding TOTP requires this authenticator-capable build on every device: the original **0.3.1** release cannot open vaults containing TOTP. Authenticator keys are encrypted with the vault and included in its exports and backups. Keeping passwords and authenticator keys together means access to the unlocked vault exposes both.
+Download the EXE from **Releases**, run it, open the tray window and create a vault. **There is no master-password reset.** GitHub is optional. Keep verified independent backups.
+
+Save edits before hiding: hiding locks the vault by default. Completed copies remain available for **10 seconds from copying**, including after hiding. Manual, idle and Windows locks clear the app's current copy immediately. Existing vaults remain readable; update all clients before saving a shared vault with a newer version.
+
+> We work to protect your data, but cannot guarantee its security or recovery. [Protection and limits](SECURITY.md).
+
+## Next: Projects
+
+**Planned; not included in 0.4.0.** Project = a dedicated encrypted vault + project secrets + an unlock policy.
+
+- **Unlock with workspace:** use the workspace's shared master-password policy.
+- **Require separate master password:** keep sensitive work or infrastructure projects separately locked.
+- Each project should have its own data key, lock state, timeout, history, export and sync. A shared unlock policy does not mean a shared data key.
+
+Next workflow: **Project → secrets → `.env` → run command**. Later: select the relevant project from context when opening **Shift+Space**. Windows Hello, hardware keys and session re-authentication are possible policy extensions, not implemented features or scheduled releases.
 
 ## Русский
 
-Переносной менеджер паролей и файлов для Windows. Работает офлайн, запускается в трее и открывается по **Shift+Space**. Написан на Flutter и Dart.
+**Приватный рабочий процесс для секретов, файлов и SSH на Windows.**
 
-- Несколько сейфов с отдельными мастер-паролями, шифрование **Argon2id + AES-256-GCM**, генератор паролей и автоблокировка.
-- Секреты и файлы в разделах и папках, перетаскивание, сохранение раскрытых разделов и новые записи в начале списка.
-- Откройте менеджер через **Shift+Space**, разблокируйте сейф и нажмите **F** — компактный поиск появится над менеджером без предварительного клика по окну. Введите название, логин, сервер или папку; выберите подсказку стрелками **↑/↓ + Enter** или мышью. **Esc** закрывает поиск. Оба сочетания меняются в **«Сочетаниях клавиш»**; при вводе текста в менеджере поиск отключён. Избранное появляется отдельным разделом сверху. **«Отменить»** остаётся прямо в удалённой карточке на **10 секунд**, до блокировки сейфа. Действия с папкой доступны по ПКМ.
-- Создание `.txt` внутри сейфа, редактирование текста в отдельных окнах; **Ctrl+S** сохраняет изменения.
-- Сохранённые SSH-подключения через CMD и Windows OpenSSH.
-- Импорт и экспорт зашифрованных `.smv`, необязательные копии в GitHub и ручная синхронизация, разбор конфликтов, история и восстановление.
-- Русский и английский интерфейс, настройка видимости при записи экрана.
-- Коды подтверждения (TOTP): выберите **«Добавить аутентификатор»**, укажите название и ключ настройки или ссылку `otpauth://`. Коды появляются отдельными плашками рядом с менеджером, от нижнего края вверх. Нажатие копирует код; колесо и стрелки листают остальные записи. Нажатие на запись аутентификатора снова открывает плашки, Esc скрывает их. Интернет не нужен; часы компьютера должны быть точными. Для удаления используйте корзину записи аутентификатора. Импорт QR не поддерживается.
+Локальные данные, работа без интернета, один переносимый EXE. **Shift+Space → сейф → нужное действие.** SkySecret развивается вокруг повседневной работы с секретами, а не как замена KeePass.
 
-Запустите **SkySecret-<версия>-windows-x64.exe**, откройте менеджер из трея и создайте сейф. **Сброса мастер-пароля нет.** GitHub подключается по желанию; настройка репозитория и токена объясняется в диалоге подключения. Сохраняйте правки перед скрытием: по умолчанию оно блокирует сейф.
+### Уже работает
 
-> Мы максимально стараемся обезопасить данные, но не можем гарантировать их безопасность и восстановление. Храните проверенные независимые резервные копии.
+- **Зашифрованные сейфы:** пароли, заметки, файлы, SSH и TOTP. Несколько сейфов, папки и избранное.
+- **Desktop-интерфейс:** компактное окно у трея, поиск по **F**, контекстные меню и **Ctrl+S** в редакторах.
+- **Перетаскивание в обе стороны:** добавление файлов в сейф и экспорт копии на рабочий стол или в Проводник. Внешняя копия не зашифрована.
+- **Текстовые файлы:** создание `.txt` и редактирование текста в отдельных окнах.
+- **Генератор в записи:** пароли, английские парольные фразы, выбор символов и сохранение настроек.
+- **Копии и синхронизация:** импорт/экспорт `.smv`, локальная история, необязательный GitHub и ручная синхронизация с разбором конфликтов.
+- **Быстрые действия:** копирование секретов, отдельные плашки TOTP и подключения через Windows OpenSSH.
 
-Перед сохранением общего сейфа в **0.3.1** обновите все устройства до **0.3.1 или новее**. Старые версии не откроют обновлённый сейф. До обновления сохраните проверенную независимую резервную копию.
+### Начать
 
-Ранее созданные сейфы открываются, включая TOTP внутри записи пароля или SSH. При сохранении такие записи сохраняют свои поля. Новые аутентификаторы создаются отдельным типом.
+Скачайте EXE из **Releases**, запустите, откройте окно из трея и создайте сейф. **Сброса мастер-пароля нет.** GitHub подключается по желанию. Храните проверенные независимые копии.
 
-Для TOTP установите эту сборку с поддержкой кодов на все устройства: исходный релиз **0.3.1** не откроет сейф с TOTP. Ключи аутентификатора зашифрованы вместе с сейфом и входят в его экспорт и резервные копии. При совместном хранении паролей и ключей доступ к открытому сейфу раскрывает оба.
+Сохраняйте правки перед скрытием: по умолчанию оно блокирует сейф. Завершённое копирование доступно **10 секунд с момента копирования**, включая время после скрытия. Ручная блокировка, тайм-аут и блокировка Windows сразу очищают текущую копию приложения. Ранее созданные сейфы читаются; перед сохранением общего сейфа в новой версии обновляйте все устройства.
 
-[Security / Безопасность](SECURITY.md) · [License](LICENSE)
+> Мы максимально стараемся обезопасить данные, но не можем гарантировать их безопасность и восстановление. [Защита и её границы](SECURITY.md).
+
+### Ближайшее обновление: Projects
+
+**В планах; в 0.4.0 ещё нет.** Project = отдельный зашифрованный сейф + секреты проекта + политика открытия.
+
+- **Открывать вместе с workspace:** общая политика мастер-пароля рабочего пространства.
+- **Требовать отдельный мастер-пароль:** чувствительный рабочий проект или инфраструктура открываются отдельно.
+- У каждого проекта планируются собственные ключ данных, блокировка, тайм-аут, история, экспорт и синхронизация. Общая политика открытия не означает общий ключ шифрования.
+
+Следующий сценарий: **Проект → секреты → `.env` → запуск команды**. Затем — выбор проекта по контексту при вызове **Shift+Space**. Windows Hello, аппаратные ключи и повторное подтверждение сессии рассматриваются как расширения политики; они пока не реализованы и не имеют срока выпуска.
+
+---
+
+Passphrases: [EFF Long Wordlist](https://www.eff.org/dice), Joseph Bonneau / Electronic Frontier Foundation, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [Attribution / источник](assets/wordlists/NOTICE.txt) · [License](LICENSE)

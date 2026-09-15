@@ -245,8 +245,8 @@ class _VaultTreeState extends State<_VaultTree> {
           key: _gapKeys.putIfAbsent(slot.key, GlobalKey.new),
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          height: opened ? _dragHeight + 8 : 8,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          height: opened ? _dragHeight + 4 : 4,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             decoration: BoxDecoration(
@@ -387,10 +387,9 @@ class _VaultTreeState extends State<_VaultTree> {
   Future<void> _contextMenu(Offset position, VaultFolder? folder) async {
     if (widget.busy || widget.session.isLocked) return;
     final session = widget.session;
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final action = await showMenu<String>(
+    final action = await showDesktopMenu<String>(
       context: context,
-      position: RelativeRect.fromRect(position & const Size(1, 1), Offset.zero & overlay.size),
+      position: position,
       items: _menu(folder),
     );
     if (mounted && identical(session, widget.session) && action != null) _action(action, folder);
@@ -428,7 +427,7 @@ class _VaultTreeState extends State<_VaultTree> {
     final expanded = !widget.collapsed.contains(folder.id);
     final header = GestureDetector(
       key: _headerKeys.putIfAbsent(folder.id, GlobalKey.new),
-      onSecondaryTapDown: (details) => _contextMenu(details.globalPosition, folder),
+      onSecondaryTapUp: (details) => _contextMenu(details.globalPosition, folder),
       child: Row(
         children: [
           Expanded(
@@ -449,7 +448,7 @@ class _VaultTreeState extends State<_VaultTree> {
                         widget.onCollapsedChanged();
                       }),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   child: Row(
                     children: [
                       Icon(expanded ? Icons.expand_more_rounded : Icons.chevron_right_rounded, size: 20),
@@ -496,23 +495,26 @@ class _VaultTreeState extends State<_VaultTree> {
       _target(
         parentId: null,
         child: GestureDetector(
-          onSecondaryTapDown: (details) => _contextMenu(details.globalPosition, null),
-          child: Row(
-            children: [
-              Expanded(
-                child: Tooltip(
-                  message: t.vaultMoveToRoot,
-                  child: Text(t.vaultContents, style: Theme.of(context).textTheme.labelLarge),
+          onSecondaryTapUp: (details) => _contextMenu(details.globalPosition, null),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DesktopTooltip(
+                    message: t.vaultMoveToRoot,
+                    child: Text(t.vaultContents, style: Theme.of(context).textTheme.labelLarge),
+                  ),
                 ),
-              ),
-              IconButton(
-                key: const Key('add-folder'),
-                tooltip: t.vaultNewFolder,
-                padding: const EdgeInsets.all(12),
-                onPressed: widget.busy ? null : () => widget.createFolder(null),
-                icon: const Icon(Icons.create_new_folder_outlined, size: 20),
-              ),
-            ],
+                DesktopIconButton(
+                  key: const Key('add-folder'),
+                  tooltip: t.vaultNewFolder,
+                  padding: const EdgeInsets.all(7),
+                  onPressed: widget.busy ? null : () => widget.createFolder(null),
+                  icon: const Icon(Icons.create_new_folder_outlined, size: 17),
+                ),
+              ],
+            ),
           ),
         ),
       ),

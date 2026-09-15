@@ -10,6 +10,7 @@ import 'core/sync/github/github_backup.dart';
 import 'i18n/translations.g.dart';
 import 'ui/manager/manager_window.dart';
 import 'ui/shared/app_theme.dart';
+import 'ui/shared/desktop_menu.dart';
 
 export 'ui/manager/manager_window.dart' show ManagerWindow;
 
@@ -43,6 +44,7 @@ class SkySecretApp extends StatelessWidget {
     title: t.appName,
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
+    navigatorObservers: [DesktopMenuObserver()],
     home: ManagerWindow(
       desktop: desktop,
       clipboard: clipboard,

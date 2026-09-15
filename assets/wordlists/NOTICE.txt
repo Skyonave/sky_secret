@@ -1,0 +1,7 @@
+EFF's Long Wordlist, by Joseph Bonneau, Electronic Frontier Foundation.
+Source: https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt
+Downloaded 2026-09-16. The word list is included unchanged.
+Licensed under Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+EFF copyright policy: https://www.eff.org/copyright
+The authors do not endorse this application.

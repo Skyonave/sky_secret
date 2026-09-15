@@ -3,6 +3,9 @@ import 'dart:convert';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
+
+import '../shared/app_theme.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
@@ -279,17 +282,7 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
     locale: TranslationProvider.of(context).flutterLocale,
     supportedLocales: AppLocaleUtils.supportedLocales,
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    theme: ThemeData(
-      brightness: Brightness.dark,
-      useMaterial3: true,
-      fontFamily: 'Segoe UI',
-      scaffoldBackgroundColor: const Color(0xFF0B131B),
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF6CDEFF),
-        onPrimary: Color(0xFF062633),
-        surface: Color(0xFF13212D),
-      ),
-    ),
+    theme: buildAppTheme(),
     home: CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () => unawaited(_save()),
@@ -306,16 +299,16 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      color: const Color(0xFF13212D),
+                      color: AppColors.surface,
                       child: Row(
                         children: [
                           const Icon(
                             Icons.description_outlined,
                             color: Color(0xFF6CDEFF),
-                            size: 22,
+                            size: 17,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -326,7 +319,7 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
                                   _name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 17),
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                                 Text(
                                   _dirty ? t.fileEditorModified : t.fileEditorStored,
@@ -350,7 +343,7 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(8),
                         child: SensitiveTextEditing(
                           controller: _text,
                           enabled: true,
@@ -380,6 +373,7 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
                               border: InputBorder.none,
                               counterText: '',
                               isCollapsed: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                             contextMenuBuilder: menuBuilder,
                           ),
@@ -395,7 +389,7 @@ class _FileEditorWindowState extends State<FileEditorWindow> with WindowListener
                         ),
                       ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
                       child: Row(
                         children: [
                           Text(

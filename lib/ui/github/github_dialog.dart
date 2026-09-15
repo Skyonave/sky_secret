@@ -1,3 +1,5 @@
+import '../shared/desktop_tooltip.dart';
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -54,12 +56,12 @@ class GitHubDialog extends StatefulWidget {
 
 class _GitHubDialogState extends State<GitHubDialog> {
   static const _controlShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(12)),
+    borderRadius: BorderRadius.all(Radius.circular(4)),
   );
   static const _buttonStyle = ButtonStyle(
-    minimumSize: WidgetStatePropertyAll(Size(0, 44)),
+    minimumSize: WidgetStatePropertyAll(Size(0, 34)),
     padding: WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     ),
     shape: WidgetStatePropertyAll(_controlShape),
     visualDensity: VisualDensity.standard,
@@ -87,11 +89,11 @@ class _GitHubDialogState extends State<GitHubDialog> {
     hintText: hint,
     floatingLabelBehavior: FloatingLabelBehavior.always,
     contentPadding: const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 16,
+      horizontal: 12,
+      vertical: 10,
     ),
     border: const OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(12)),
+      borderRadius: BorderRadius.all(Radius.circular(4)),
     ),
   );
 
@@ -180,9 +182,9 @@ class _GitHubDialogState extends State<GitHubDialog> {
       return AlertDialog(
         title: Text(t.githubTitle),
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-        contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         content: SizedBox(
           width: 340,
           child: SingleChildScrollView(
@@ -481,7 +483,7 @@ class _GitHubDialogState extends State<GitHubDialog> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (widget.linkExisting != null)
-                            IconButton(
+                            DesktopIconButton(
                               tooltip: t.syncRelink,
                               onPressed: disabled
                                   ? null
@@ -499,7 +501,7 @@ class _GitHubDialogState extends State<GitHubDialog> {
                                     },
                               icon: const Icon(Icons.link_rounded),
                             ),
-                          IconButton(
+                          DesktopIconButton(
                             tooltip: t.githubRestore,
                             onPressed: disabled ? null : () => _restore(vault),
                             icon: const Icon(Icons.download_rounded),

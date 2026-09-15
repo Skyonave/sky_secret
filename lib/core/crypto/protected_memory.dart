@@ -52,6 +52,11 @@ class ProtectedBytes {
     }
   }
 
+  Uint8List copyProtectedMemory() {
+    _check();
+    return Uint8List.fromList(_ciphertext);
+  }
+
   void destroy() {
     _ciphertext.fillRange(0, _ciphertext.length, 0);
     _destroyed = true;

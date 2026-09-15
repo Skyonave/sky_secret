@@ -40,6 +40,8 @@ class VaultAttachment {
 
   Uint8List get bytes => _bytes.read();
 
+  Uint8List copyProtectedMemory() => _bytes.copyProtectedMemory();
+
   static bool validName(String name) =>
       name.isNotEmpty &&
       name.length <= 240 &&

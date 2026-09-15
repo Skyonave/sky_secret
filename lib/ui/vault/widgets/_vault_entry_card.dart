@@ -37,14 +37,14 @@ class _VaultEntryCard extends StatelessWidget {
         ? t.vaultSecretKind
         : entry.username;
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-      side: BorderSide(color: lifted || copied ? colors.primary.withValues(alpha: 0.35) : colors.outlineVariant),
+      borderRadius: BorderRadius.circular(4),
+      side: BorderSide(color: lifted || copied ? colors.primary.withValues(alpha: 0.35) : Colors.transparent),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
       child: Material(
-        color: lifted ? colors.surfaceContainerHigh : colors.surfaceContainer,
+        color: lifted || copied ? colors.surfaceContainerHigh : Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: lifted ? 6 : 0,
         shadowColor: Colors.black.withValues(alpha: 0.25),
@@ -54,18 +54,18 @@ class _VaultEntryCard extends StatelessWidget {
           onTap: onTap,
           customBorder: shape,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 60),
+            constraints: const BoxConstraints(minHeight: 44),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               child: Row(
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    width: 36,
-                    height: 36,
+                    width: 24,
+                    height: 28,
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: copied ? 0.18 : 0.10),
-                      borderRadius: BorderRadius.circular(11),
+                      color: copied ? colors.primary.withValues(alpha: 0.18) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Icon(
                       copied
@@ -78,10 +78,10 @@ class _VaultEntryCard extends StatelessWidget {
                           ? Icons.terminal_rounded
                           : Icons.lock_outline_rounded,
                       color: colors.primary,
-                      size: 20,
+                      size: 17,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -94,10 +94,10 @@ class _VaultEntryCard extends StatelessWidget {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colors.onSurface,
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 1),
                         Semantics(
                           liveRegion: copied,
                           child: AnimatedSwitcher(
@@ -123,7 +123,7 @@ class _VaultEntryCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   if (trailing == null)
-                    const SizedBox(width: 76)
+                    const SizedBox(width: 32)
                   else
                     IconTheme(
                       data: IconThemeData(color: colors.onSurfaceVariant),

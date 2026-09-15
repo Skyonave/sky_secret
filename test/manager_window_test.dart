@@ -1,4 +1,11 @@
 import 'dart:io';
+import 'dart:async';
+
+import 'package:skysecret/ui/generator/generator_dialog.dart';
+import 'package:skysecret/ui/generator/generator_service.dart';
+import 'package:skysecret/core/settings/generator_preferences.dart';
+import 'package:skysecret/ui/vault/vault_panel.dart';
+import 'package:skysecret/ui/shared/input/sensitive_text_editing.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +17,6 @@ import 'package:skysecret/core/desktop/desktop_actions.dart';
 import 'package:skysecret/core/desktop/clipboard/sensitive_clipboard.dart';
 import 'package:skysecret/core/settings/shortcut_settings.dart';
 import 'package:skysecret/i18n/translations.g.dart';
-
-import 'support/password_preview_assertions.dart';
 
 class EmptyTestVaultStore extends VaultStore {
   EmptyTestVaultStore() : super(file: File('unused-widget-test-vault'));
@@ -94,12 +99,22 @@ void main() {
   }
 
   Future<void> generator(WidgetTester tester) async {
-    await tester.tap(find.text(t.generator));
+    expect(find.byKey(const Key('open-generator')), findsNothing);
+    final context = tester.element(find.byType(VaultPanel));
+    unawaited(
+      showGenerator(
+        context: context,
+        service: GeneratorService(GeneratorPreferences()),
+        copy: (value) => SensitiveClipboardScope.copyText(context, value),
+        actionLabel: t.generatorUseEntry,
+        canApply: false,
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
   Future<void> copy(WidgetTester tester) async {
-    final button = find.byKey(const Key('copy-password'));
+    final button = find.byKey(const Key('generator-copy'));
     await tester.ensureVisible(button);
     await tester.tap(button);
     await tester.pump();
@@ -107,103 +122,40 @@ void main() {
 
   String password(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('generated-password'))).data!;
 
-  testWidgets('empty state, generator, Escape and close hide', (tester) async {
+  testWidgets('generator Escape closes the panel, manager close hides', (tester) async {
     final desktop = FakeDesktop();
     await open(tester, desktop);
     expect(find.text(t.emptyVault), findsOneWidget);
     await generator(tester);
     expect(password(tester).length, 24);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    expect(desktop.hides, 1);
+    await tester.pumpAndSettle();
+    expect(desktop.hides, 0);
     await tester.tap(find.byTooltip(t.hide));
-    expect(desktop.hides, 2);
+    expect(desktop.hides, 1);
     expect(tester.takeException(), isNull);
   });
 
   for (final locale in AppLocale.values) {
-    for (final size in [
-      const Size(460, 600),
-      const Size(444, 584),
-      const Size(400, 520),
-      const Size(384, 504),
-    ]) {
-      testWidgets('generator fits without scrolling: ${locale.name} $size', (
-        tester,
-      ) async {
+    for (final size in [const Size(460, 600), const Size(384, 504)]) {
+      testWidgets('generator numeric settings remain usable: ${locale.name} $size', (tester) async {
         await LocaleSettings.setLocale(locale);
         await open(tester, FakeDesktop(), size: size);
         await generator(tester);
-        final content = find.byKey(const Key('manager-content'));
-        final scrollable = find.descendant(of: content, matching: find.byType(Scrollable)).first;
-        for (final length in [24.0, 64.0, 12.0]) {
-          final slider = tester.widget<Slider>(
-            find.byKey(const Key('length-slider')),
-          );
-          slider.onChanged!(length);
-          slider.onChangeEnd!(length);
-          await tester.pump();
-          expectPasswordFullyVisible(tester);
-          expect(
-            tester.state<ScrollableState>(scrollable).position.maxScrollExtent,
-            0,
-          );
-          final viewport = tester.getRect(content);
-          for (final key in [
-            'password-panel',
-            'length-slider',
-            'copy-password',
-            'clipboard-help',
-          ]) {
-            final rect = tester.getRect(find.byKey(Key(key)));
-            expect(rect.top, greaterThanOrEqualTo(viewport.top), reason: key);
-            expect(
-              rect.bottom,
-              lessThanOrEqualTo(viewport.bottom),
-              reason: key,
-            );
-          }
-          expect(
-            find.byKey(const Key('copy-password')).hitTestable(),
-            findsOneWidget,
-          );
+        final count = find.byKey(const Key('generator-count'));
+        for (final length in [12, 64, 24]) {
+          await tester.ensureVisible(count);
+          await tester.enterText(count, '$length');
+          await tester.pumpAndSettle();
+          expect(password(tester).length, length);
+          await tester.ensureVisible(find.byKey(const Key('generator-copy')));
+          expect(find.byKey(const Key('generator-copy')).hitTestable(), findsOneWidget);
           expect(tester.takeException(), isNull);
         }
+        await tester.pumpWidget(const SizedBox.shrink());
       });
     }
-    testWidgets('stable slider layout and translations: ${locale.name}', (
-      tester,
-    ) async {
-      await LocaleSettings.setLocale(locale);
-      await open(tester, FakeDesktop(), size: const Size(400, 520));
-      expect(find.text(t.emptyVault), findsOneWidget);
-      expect(
-        find.text(locale == AppLocale.ru ? 'Сейф' : 'Vault'),
-        findsOneWidget,
-      );
-      await generator(tester);
-      final slider = find.byKey(const Key('length-slider'));
-      final panel = find.byKey(const Key('password-panel'));
-      await tester.ensureVisible(slider);
-      await tester.pumpAndSettle();
-      final initialPanel = tester.getRect(panel);
-      final initialSlider = tester.getRect(slider);
-      final initialPassword = password(tester);
-      for (final length in [12.0, 35.0, 64.0]) {
-        tester.widget<Slider>(slider).onChanged!(length);
-        await tester.pump();
-        expect(password(tester), initialPassword);
-        expect(tester.getRect(panel), initialPanel);
-        expect(tester.getRect(slider), initialSlider);
-      }
-      tester.widget<Slider>(slider).onChangeEnd!(64);
-      await tester.pump();
-      expect(password(tester).length, 64);
-      expect(tester.getRect(panel), initialPanel);
-      expect(tester.getRect(slider), initialSlider);
-      expect(tester.takeException(), isNull);
-    });
   }
-
   for (final externalCopy in [false, true]) {
     testWidgets(
       'clipboard expiry preserves newer copies, even identical: $externalCopy',
@@ -214,7 +166,7 @@ void main() {
         await copy(tester);
         expect(clipboard.text, isNotEmpty);
         if (externalCopy) clipboard.revision++;
-        await tester.pump(const Duration(seconds: 31));
+        await tester.pump(const Duration(seconds: 11));
         expect(clipboard.text == null, !externalCopy);
         await tester.pumpWidget(const SizedBox.shrink());
       },
@@ -227,12 +179,12 @@ void main() {
     await open(tester, FakeDesktop(), clipboard: clipboard);
     await generator(tester);
     await copy(tester);
-    await tester.pump(const Duration(seconds: 20));
+    await tester.pump(const Duration(seconds: 6));
     await copy(tester);
-    await tester.pump(const Duration(seconds: 20));
+    await tester.pump(const Duration(seconds: 6));
     expect(clipboard.text, isNotNull);
     clipboard.failures = 1;
-    await tester.pump(const Duration(seconds: 10));
+    await tester.pump(const Duration(seconds: 4));
     expect(clipboard.text, isNotNull);
     await tester.pump(const Duration(seconds: 1));
     expect(clipboard.text, isNull);

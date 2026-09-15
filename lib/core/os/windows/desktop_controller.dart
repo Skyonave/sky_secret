@@ -112,6 +112,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
   bool _windowFocused = false;
   Timer? _releaseTimer;
   bool _fileDragHover = false;
+  bool _fileDragActive = false;
   bool _focusingDrop = false;
   bool _trayMenuOpen = false;
   bool _sshAuthenticationPending = false;
@@ -145,6 +146,16 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
 
   @override
   void setFileDragHover(bool hovering) => _fileDragHover = hovering;
+
+  @override
+  void setFileDragActive(bool active) {
+    _fileDragActive = active;
+    if (active) {
+      _blurDismissal.cancel();
+    } else if (_managerVisible && !_windowFocused) {
+      onCompanionBlur();
+    }
+  }
 
   @override
   Future<bool> focusFileDrop() async {
@@ -433,7 +444,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
       return processId.value == win32.GetCurrentProcessId();
     });
     return (
-      protectedFocus: _exiting || _focusingDrop || _sshAuthenticationPending || focused || ownDialog,
+      protectedFocus: _exiting || _focusingDrop || _fileDragActive || _sshAuthenticationPending || focused || ownDialog,
       leftDown: _keyDown(0x01),
       cancelDrag: _keyDown(0x02) || _keyDown(0x04) || _keyDown(0x1B),
       fileOver: _fileDragHover,

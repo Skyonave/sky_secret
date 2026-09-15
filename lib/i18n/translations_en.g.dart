@@ -37,6 +37,42 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
       TranslationsEn(meta: meta ?? this.$meta);
 
   @override
+  String get generatorOpen => 'Generator…';
+  @override
+  String get generatorAgain => 'Generate another';
+  @override
+  String get generatorChooseGroup => 'Select at least one character group.';
+  @override
+  String get generatorClose => 'Close generator';
+  @override
+  String get generatorCreateEntry => 'Create entry';
+  @override
+  String get generatorEnglishWords => 'English words · EFF dictionary · offline';
+  @override
+  String get generatorExcludeSimilar => 'Exclude similar characters';
+  @override
+  String get generatorFailed => 'Could not generate a value. Try again.';
+  @override
+  String get generatorPassphrase => 'Passphrase';
+  @override
+  String get generatorPassword => 'Password';
+  @override
+  String get generatorPreferencesFailed => 'Preferences could not be loaded or saved. Check the settings before use.';
+  @override
+  String get generatorRange => 'Out of range';
+  @override
+  String get generatorSeparator => 'Separator';
+  @override
+  String get generatorSimilarHint => 'Exclude O, 0, o, I, l and 1.';
+  @override
+  String get generatorSpace => 'Space';
+  @override
+  String get generatorUnlock => 'Unlock this vault to create the entry. Hiding the window cancels this action.';
+  @override
+  String get generatorUseEntry => 'Use in entry';
+  @override
+  String get generatorWords => 'Number of words';
+  @override
   String browserDeleting({required Object seconds}) => 'Deleted · undo for ${seconds} s';
   @override
   String get keyboardShortcuts => 'Keyboard shortcuts';
@@ -182,7 +218,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get regenerate => 'Generate another';
   @override
-  String get clipboardHelp => 'Cleared after 30 seconds.\nNo Windows history or sync.';
+  String get clipboardHelp => 'Cleared after 10 seconds.\nNo Windows history or sync.';
   @override
   String get githubDisconnected => 'GitHub disconnected';
   @override
@@ -195,6 +231,13 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   String get resetShortcut => 'Reset to Shift + Space';
   @override
   String get cancel => 'Cancel';
+  @override
+  String get fileReplaceTitle => 'Replace file?';
+  @override
+  String fileReplaceBody({required Object path}) =>
+      'A file already exists at:\n${path}\n\nReplace it with the saved copy?';
+  @override
+  String get fileReplace => 'Replace';
   @override
   String get saving => 'Saving…';
   @override
@@ -303,7 +346,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   String get vaultLockWhenHidden => 'Lock when hidden';
   @override
   String get vaultLockWhenHiddenHelp =>
-      'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.';
+      'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. Completed clipboard copies remain available for 10 seconds from copying. This setting is independent of the idle timer.';
   @override
   String get vaultSnapshotCleanupWarning =>
       'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.';
@@ -380,7 +423,9 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get fileEditorStored => 'Saved in the encrypted vault';
   @override
-  String get vaultFileHint => 'Open file · drag to move or reorder';
+  String get vaultFileHint => 'Open file · drag inside to organize, outside to save a copy';
+  @override
+  String get vaultFileDragFailed => 'Could not drag the file out. Use Save to disk from its right-click menu.';
   @override
   String get fileEditorModified => 'Unsaved changes';
   @override
@@ -657,6 +702,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get browserSearch => 'Search';
   @override
+  String get desktopSync => 'Sync';
+  @override
   String get browserSearchHint => 'Name, username, server or folder';
   @override
   String get browserCloseSearch => 'Close search';
@@ -734,6 +781,24 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 extension on TranslationsEn {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
+      'generatorOpen' => 'Generator…',
+      'generatorAgain' => 'Generate another',
+      'generatorChooseGroup' => 'Select at least one character group.',
+      'generatorClose' => 'Close generator',
+      'generatorCreateEntry' => 'Create entry',
+      'generatorEnglishWords' => 'English words · EFF dictionary · offline',
+      'generatorExcludeSimilar' => 'Exclude similar characters',
+      'generatorFailed' => 'Could not generate a value. Try again.',
+      'generatorPassphrase' => 'Passphrase',
+      'generatorPassword' => 'Password',
+      'generatorPreferencesFailed' => 'Preferences could not be loaded or saved. Check the settings before use.',
+      'generatorRange' => 'Out of range',
+      'generatorSeparator' => 'Separator',
+      'generatorSimilarHint' => 'Exclude O, 0, o, I, l and 1.',
+      'generatorSpace' => 'Space',
+      'generatorUnlock' => 'Unlock this vault to create the entry. Hiding the window cancels this action.',
+      'generatorUseEntry' => 'Use in entry',
+      'generatorWords' => 'Number of words',
       'browserDeleting' => ({required Object seconds}) => 'Deleted · undo for ${seconds} s',
       'keyboardShortcuts' => 'Keyboard shortcuts',
       'searchShortcutHelp' =>
@@ -810,13 +875,18 @@ extension on TranslationsEn {
       'copied' => 'Copied',
       'copy' => 'Copy',
       'regenerate' => 'Generate another',
-      'clipboardHelp' => 'Cleared after 30 seconds.\nNo Windows history or sync.',
+      'clipboardHelp' => 'Cleared after 10 seconds.\nNo Windows history or sync.',
       'githubDisconnected' => 'GitHub disconnected',
       'shortcutTitle' => 'Keyboard shortcut',
       'shortcutHelp' => 'Click the field and press your preferred shortcut.',
       'unsupportedKey' => 'This key is not supported.',
       'resetShortcut' => 'Reset to Shift + Space',
       'cancel' => 'Cancel',
+      'fileReplaceTitle' => 'Replace file?',
+      'fileReplaceBody' => ({
+        required Object path,
+      }) => 'A file already exists at:\n${path}\n\nReplace it with the saved copy?',
+      'fileReplace' => 'Replace',
       'saving' => 'Saving…',
       'save' => 'Save',
       'readSettingsFailed' => 'Could not read settings. Using Shift + Space.',
@@ -873,7 +943,7 @@ extension on TranslationsEn {
       'vaultSettings' => 'Vault settings',
       'vaultAutoLock' => 'Auto-lock',
       'vaultLockWhenHidden' => 'Lock when hidden',
-      'vaultLockWhenHiddenHelp' => 'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. This setting is independent of the idle timer.',
+      'vaultLockWhenHiddenHelp' => 'Esc, close, minimize and hiding to the tray on focus loss lock the vault and close editors. Unsaved changes are lost. Completed clipboard copies remain available for 10 seconds from copying. This setting is independent of the idle timer.',
       'vaultSnapshotCleanupWarning' => 'The current vault uses the new password, but some local snapshots could not be deleted and may still open with the old password. Close programs using those files and reopen the vault to retry cleanup. External exports and GitHub history remain separate.',
       'vaultPasswordBackupWarning' => 'After the new password is saved, local recovery history and cached sync snapshots are deleted. Previous exports and GitHub revisions remain decryptable with the old password. If it was compromised, verify a new independent backup and replace the backup repository; old repositories and downloaded copies are not revoked automatically. Change any exposed account passwords too. New vaults and password changes use format v2; update all devices to SkySecret 0.2.0 or later.',
       'vaultAutoLockHelp' => 'After 2 minutes of inactivity. Windows lock and sleep always lock the vault.',
@@ -910,7 +980,8 @@ extension on TranslationsEn {
       'fileEditorUnsupported' => 'Preview is unavailable for this format, encoding, or files over 2 MiB. Save the original file to your computer.',
       'vaultAddFile' => 'Add file',
       'fileEditorStored' => 'Saved in the encrypted vault',
-      'vaultFileHint' => 'Open file · drag to move or reorder',
+      'vaultFileHint' => 'Open file · drag inside to organize, outside to save a copy',
+      'vaultFileDragFailed' => 'Could not drag the file out. Use Save to disk from its right-click menu.',
       'fileEditorModified' => 'Unsaved changes',
       'fileEditorCloseHelp' => 'The updated file will be saved in the encrypted vault.',
       'fileEditorUnsaved' => 'Save changes?',
@@ -1039,6 +1110,7 @@ extension on TranslationsEn {
       'browserFavorites' => 'Favorites',
       'browserTrash' => ({required Object count}) => 'Trash (${count})',
       'browserSearch' => 'Search',
+      'desktopSync' => 'Sync',
       'browserSearchHint' => 'Name, username, server or folder',
       'browserCloseSearch' => 'Close search',
       'browserTrashHelp' => 'Deleted entries stay encrypted here until you remove them permanently. They count toward vault limits. Existing backups may retain older copies.',

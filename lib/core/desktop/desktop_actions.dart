@@ -26,6 +26,8 @@ abstract class DesktopActions extends ChangeNotifier {
 
   void setFileDragHover(bool hovering) {}
 
+  void setFileDragActive(bool active) {}
+
   void setSshAuthenticationPending(bool pending) {}
 
   void onCompanionBlur() {}

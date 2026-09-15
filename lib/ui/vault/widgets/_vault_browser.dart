@@ -32,11 +32,11 @@ class _VaultBrowser extends StatelessWidget {
       children: [
         if (favorites.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
             child: TextButton(
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               onPressed: () {
                 if (collapsed.contains('@favorites')) {
@@ -62,7 +62,7 @@ class _VaultBrowser extends StatelessWidget {
           ),
           if (!collapsed.contains('@favorites'))
             for (final entry in favorites) entryCard(entry),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
         ],
         tree,
       ],

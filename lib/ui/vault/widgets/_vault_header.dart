@@ -54,7 +54,7 @@ class _VaultHeader extends StatelessWidget {
                   autocorrect: false,
                   enableSuggestions: false,
                   style: const TextStyle(
-                    fontSize: 21,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
@@ -66,7 +66,7 @@ class _VaultHeader extends StatelessWidget {
                   onSubmitted: (_) => onRename(),
                 ),
               )
-            : Tooltip(
+            : DesktopTooltip(
                 message: unlocked == false ? '' : t.vaultRename,
                 child: TextButton(
                   key: const Key('vault-heading'),
@@ -78,16 +78,16 @@ class _VaultHeader extends StatelessWidget {
                       horizontal: 10,
                       vertical: 6,
                     ),
-                    minimumSize: const Size(0, 40),
+                    minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                   onPressed: unlocked == false || busy ? null : onStartRename,
                   child: Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 23,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -98,13 +98,13 @@ class _VaultHeader extends StatelessWidget {
       ),
       ?switcher,
       if (renaming && unlocked) ...[
-        IconButton(
+        DesktopIconButton(
           key: const Key('confirm-vault-name'),
           tooltip: t.save,
           onPressed: busy ? null : onRename,
           icon: const Icon(Icons.check_rounded, size: 20),
         ),
-        IconButton(
+        DesktopIconButton(
           key: const Key('cancel-vault-name'),
           tooltip: t.cancel,
           onPressed: busy ? null : onCancelRename,
@@ -112,14 +112,14 @@ class _VaultHeader extends StatelessWidget {
         ),
       ],
       if (showSettings)
-        IconButton(
+        DesktopIconButton(
           key: const Key('vault-settings'),
           tooltip: t.vaultSettings,
           onPressed: savingPreferences ? null : onSettings,
           icon: const Icon(Icons.settings_outlined, size: 21),
         ),
       if (unlocked)
-        IconButton(
+        DesktopIconButton(
           key: const Key('lock-vault'),
           tooltip: t.vaultLock,
           onPressed: busy ? null : onLock,

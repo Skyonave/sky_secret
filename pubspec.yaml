@@ -1,7 +1,7 @@
 name: skysecret
-description: "SkySecret: a private Windows secret manager that lives in the system tray."
+description: "SkySecret: a private workflow for secrets, files and SSH on Windows."
 publish_to: 'none'
-version: 0.3.6+17
+version: 0.4.0+18
 
 environment:
   sdk: ^3.13.0
@@ -37,3 +37,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/tray_icon.ico
+    - assets/wordlists/

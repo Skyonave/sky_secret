@@ -67,11 +67,13 @@ class _VaultUnlockForm extends StatelessWidget {
           textInputAction: TextInputAction.done,
           onSubmit: onOpen,
         ),
-      FilledButton(
-        key: const Key('open-vault'),
-        onPressed: busy ? null : onOpen,
-        child: Text(
-          busy ? t.vaultWorking : (exists ? t.vaultUnlock : t.vaultCreate),
+      Align(
+        alignment: Alignment.centerRight,
+        child: FilledButton.icon(
+          key: const Key('open-vault'),
+          onPressed: busy ? null : onOpen,
+          icon: const Icon(Icons.lock_open_outlined, size: 16),
+          label: Text(busy ? t.vaultWorking : (exists ? t.vaultUnlock : t.vaultCreate)),
         ),
       ),
     ],

@@ -1,3 +1,5 @@
+import '../shared/desktop_tooltip.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import '../../core/crypto/crypto.dart';
 import '../../core/desktop/desktop_actions.dart';
 import '../../core/desktop/clipboard/sensitive_clipboard.dart';
 import '../../core/desktop/clipboard/sensitive_clipboard_boundary.dart';
+import '../../core/desktop/clipboard/sensitive_clipboard_controller.dart';
 import '../../core/settings/vault_preferences.dart';
 import '../../core/os/windows/windows_sensitive_clipboard.dart';
 import '../../core/sync/github/github_backup.dart';
@@ -15,11 +18,13 @@ import '../../i18n/translations.g.dart';
 import '../github/github_dialog.dart';
 import '../settings/shortcut_dialog.dart';
 import '../shared/app_theme.dart';
+
+import '../generator/generator_service.dart';
+import '../../core/settings/generator_preferences.dart';
+import '../shared/desktop_menu.dart';
 import '../shared/native_file_drop_target.dart';
 import '../shared/input/sensitive_text_editing.dart';
 import '../vault/vault_panel.dart';
-
-part '_generator_panel.dart';
 
 class ManagerWindow extends StatefulWidget {
   final DesktopActions desktop;
@@ -48,19 +53,22 @@ class ManagerWindow extends StatefulWidget {
 class _ManagerWindowState extends State<ManagerWindow> {
   final _vaultKey = GlobalKey<VaultPanelState>();
   bool _fileHover = false;
-  final _generator = PasswordGenerator();
-  int _page = 0;
-  int _length = 24;
-  bool _symbols = true;
-  String _password = '';
-  bool _copied = false;
-  Timer? _clipboardTimer;
-  int? _clipboardRevision;
+  late final _generatorService = GeneratorService(
+    widget.vaultStore == null ? GeneratorPreferences.local() : GeneratorPreferences(),
+  );
   bool _copying = false;
-  int _clipboardGeneration = 0;
-  late final SensitiveClipboard _clipboard = widget.clipboard ?? WindowsSensitiveClipboard();
 
-  void _beforeHide() => _vaultKey.currentState?.onWindowHidden();
+  late final _clipboard = SensitiveClipboardController(
+    clipboard: widget.clipboard ?? WindowsSensitiveClipboard(),
+    onCleared: () {},
+  );
+  void _beforeHide() {
+    DesktopTooltip.dismissAll();
+    DesktopMenuObserver.dismissAll();
+    _clipboard.cancelPendingWrites();
+    _vaultKey.currentState?.onWindowHidden();
+  }
+
   void _afterShow() => _vaultKey.currentState?.onWindowShown();
 
   @override
@@ -108,7 +116,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
     if (vault == null || !(ModalRoute.of(context)?.isCurrent ?? true)) return;
     try {
       if (!await widget.desktop.focusFileDrop() || !mounted) return;
-      _selectPage(0);
+
       await vault.importDroppedFiles(paths, sessionToken: token, folderId: folderId);
     } catch (_) {
       if (mounted) {
@@ -122,7 +130,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
     enable: ModalRoute.of(context)?.isCurrent ?? true,
     onHover: _setFileHover,
     onPosition: (position) {
-      if (_page == 0) _vaultKey.currentState?.updateFileDropPosition(position);
+      _vaultKey.currentState?.updateFileDropPosition(position);
     },
     onFiles: (paths) => unawaited(_receiveFiles(paths)),
     onRejected: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.vaultDropReadFailed))),
@@ -131,7 +139,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
       fit: StackFit.expand,
       children: [
         child,
-        if (_fileHover && !(_page == 0 && (_vaultKey.currentState?.canAcceptFileDrop ?? false)))
+        if (_fileHover && !(_vaultKey.currentState?.canAcceptFileDrop ?? false))
           Positioned.fill(
             child: IgnorePointer(
               child: Material(
@@ -178,31 +186,12 @@ class _ManagerWindowState extends State<ManagerWindow> {
     ),
   );
 
-  void _selectPage(int page) => setState(() {
-    _page = page;
-    if (page == 1 && _password.isEmpty) _generate();
-  });
-
-  void _generate() {
-    _password = _generator.generate(length: _length, symbols: _symbols);
-    _copied = false;
-  }
-
-  Future<void> _copy() => _copySecret(_password, generated: true);
-
-  Future<bool> _copySecret(String value, {bool generated = false}) async {
+  Future<bool> _copySecret(String value) async {
     if (_copying) return false;
-    final generation = _clipboardGeneration;
     setState(() => _copying = true);
     try {
-      _clipboardRevision = await _clipboard.write(value);
-      _clipboardTimer?.cancel();
-      if (!mounted || generation != _clipboardGeneration) {
-        await _clearClipboard();
-        return false;
-      }
-      _clipboardTimer = Timer(const Duration(seconds: 30), _clearClipboard);
-      if (mounted) setState(() => _copied = generated && _password == value);
+      if (await _clipboard.write(value) == false) return false;
+
       return true;
     } on ClipboardUnavailable {
       if (mounted) {
@@ -214,27 +203,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
     }
   }
 
-  Future<void> _clearClipboard() async {
-    final owned = _clipboardRevision;
-    if (owned == null) return;
-    try {
-      await _clipboard.clearIfCurrent(owned);
-    } on ClipboardUnavailable {
-      if (mounted && _clipboardRevision == owned) {
-        _clipboardTimer = Timer(const Duration(seconds: 1), _clearClipboard);
-      }
-      return;
-    }
-    if (_clipboardRevision != owned) return;
-    _clipboardRevision = null;
-    if (mounted) setState(() => _copied = false);
-  }
-
-  Future<void> _clearVaultClipboard() async {
-    _clipboardGeneration++;
-    _clipboardTimer?.cancel();
-    await _clearClipboard();
-  }
+  Future<void> _clearVaultClipboard() => _clipboard.clear();
 
   @override
   void dispose() {
@@ -242,9 +211,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
     widget.desktop.onBeforeHide = null;
     widget.desktop.onAfterShow = null;
     widget.desktop.setFileDragHover(false);
-    _clipboardGeneration++;
-    _clipboardTimer?.cancel();
-    unawaited(_clearClipboard());
+    _clipboard.dispose();
     super.dispose();
   }
 
@@ -263,83 +230,36 @@ class _ManagerWindowState extends State<ManagerWindow> {
               child: Column(
                 children: [
                   _titleBar(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                    child: _tabs(),
-                  ),
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxHeight < 430;
-                        return SingleChildScrollView(
-                          key: const Key('manager-content'),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Offstage(
-                                offstage: _page != 0,
-                                child: VaultPanel(
-                                  onSearchHandlerChanged: widget.desktop.setSearchHandler,
-                                  searchShortcut: () => widget.desktop.searchShortcut,
-                                  onCodesBlur: widget.desktop.onCompanionBlur,
-                                  active: _page == 0,
-                                  key: _vaultKey,
-                                  store: widget.vaultStore,
-                                  catalog: widget.vaultCatalog,
-                                  preferences: widget.vaultPreferences,
-                                  githubBackup: widget.githubBackup,
-                                  copySecret: _copySecret,
-                                  clearClipboard: _clearVaultClipboard,
-                                  onSearchDismissed: widget.desktop.hide,
-                                  onSshAuthorizationChanged: widget.desktop.setSshAuthenticationPending,
-                                ),
-                              ),
-                              if (_page == 1)
-                                _GeneratorPanel(
-                                  compact: compact,
-                                  password: _password,
-                                  length: _length,
-                                  symbols: _symbols,
-                                  copied: _copied,
-                                  copying: _copying,
-                                  onCopy: _copy,
-                                  onRegenerate: () => setState(_generate),
-                                  onLengthChanged: (value) => setState(() => _length = value.round()),
-                                  onSymbolsChanged: (value) => setState(() {
-                                    _symbols = value;
-                                    _generate();
-                                  }),
-                                ),
-                              ListenableBuilder(
-                                listenable: widget.desktop,
-                                builder: (context, _) {
-                                  final notice = widget.desktop.notice;
-                                  if (notice == null) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 16),
-                                    child: Text(
-                                      notice,
-                                      style: const TextStyle(
-                                        color: Color(0xFFFFCB8A),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                    child: VaultPanel(
+                      generatorService: _generatorService,
+                      onFileDragChanged: widget.desktop.setFileDragActive,
+                      onSearchHandlerChanged: widget.desktop.setSearchHandler,
+                      searchShortcut: () => widget.desktop.searchShortcut,
+                      onCodesBlur: widget.desktop.onCompanionBlur,
+                      key: _vaultKey,
+                      store: widget.vaultStore,
+                      catalog: widget.vaultCatalog,
+                      preferences: widget.vaultPreferences,
+                      githubBackup: widget.githubBackup,
+                      copySecret: _copySecret,
+                      clearClipboard: _clearVaultClipboard,
+                      onSearchDismissed: widget.desktop.hide,
+                      onSshAuthorizationChanged: widget.desktop.setSshAuthenticationPending,
                     ),
                   ),
-                  if (widget.githubBackup != null) _syncBar(),
+                  ListenableBuilder(
+                    listenable: widget.desktop,
+                    builder: (context, _) => widget.desktop.notice == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            child: Text(
+                              widget.desktop.notice!,
+                              style: const TextStyle(color: Color(0xFFFFCB8A), fontSize: 11),
+                            ),
+                          ),
+                  ),
                   _footer(),
                 ],
               ),
@@ -350,92 +270,43 @@ class _ManagerWindowState extends State<ManagerWindow> {
     ),
   );
 
-  Widget _titleBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 16, 12, 0),
+  Widget _titleBar() => Container(
+    padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+    decoration: const BoxDecoration(
+      color: AppColors.surface,
+      border: Border(bottom: BorderSide(color: AppColors.border)),
+    ),
     child: Row(
       children: [
         Expanded(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onPanStart: (_) => unawaited(widget.desktop.drag()),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.lock_outline_rounded,
-                    color: AppColors.accent,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  t.appName,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline_rounded, color: AppColors.accent, size: 16),
+                  const SizedBox(width: 8),
+                  Text(t.appName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
+              ),
             ),
           ),
         ),
-        IconButton(
+        DesktopIconButton(
           tooltip: t.hide,
           onPressed: () => unawaited(widget.desktop.hide()),
-          icon: const Icon(Icons.close_rounded, size: 19, color: AppColors.muted),
+          icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.muted),
         ),
       ],
-    ),
-  );
-
-  Widget _tabs() => Container(
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(13),
-    ),
-    child: Row(
-      children: [
-        _tab(0, Icons.inventory_2_outlined, t.vault),
-        _tab(1, Icons.auto_awesome_outlined, t.generator),
-      ],
-    ),
-  );
-
-  Widget _tab(
-    int page,
-    IconData icon,
-    String label,
-  ) => Expanded(
-    child: TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: _page == page ? AppColors.accent : AppColors.muted,
-        backgroundColor: _page == page ? const Color(0xFF1B3A4B) : Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-        minimumSize: const Size(0, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      ),
-      onPressed: () => _selectPage(page),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 17),
-          const SizedBox(width: 8),
-          Flexible(child: Text(label, textAlign: TextAlign.center)),
-        ],
-      ),
     ),
   );
 
   ButtonStyle get _footerButtonStyle => TextButton.styleFrom(
-    minimumSize: const Size(0, 36),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    minimumSize: const Size(0, 30),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     foregroundColor: AppColors.muted,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
     textStyle: const TextStyle(fontSize: 11),
   );
 
@@ -455,115 +326,75 @@ class _ManagerWindowState extends State<ManagerWindow> {
           shape: BoxShape.circle,
         ),
       ),
-      const SizedBox(width: 8),
+      const SizedBox(width: 7),
       Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
     ],
   );
 
-  Widget _syncBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-    child: ListenableBuilder(
-      listenable: widget.githubBackup!,
-      builder: (context, _) {
-        final backup = widget.githubBackup!;
-        return SizedBox(
-          width: double.infinity,
-          child: FilledButton.tonalIcon(
-            key: const Key('synchronize-vault'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: backup.busy || !backup.usable
-                ? null
-                : () {
-                    if (_vaultKey.currentState?.fileDropSession == null) {
-                      setState(() => _page = 0);
-                    }
-                    unawaited(_vaultKey.currentState?.synchronize(backup));
-                  },
-            icon: backup.busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.sync_rounded, size: 20),
-            label: Text(backup.busy ? t.syncWorking : t.syncNow),
-          ),
-        );
-      },
-    ),
+  Widget _syncButton() => ListenableBuilder(
+    listenable: widget.githubBackup!,
+    builder: (context, _) {
+      final backup = widget.githubBackup!;
+      return DesktopTooltip(
+        message: backup.busy ? t.syncWorking : t.syncNow,
+        child: TextButton.icon(
+          key: const Key('synchronize-vault'),
+          style: _footerButtonStyle,
+          onPressed: backup.busy || !backup.usable
+              ? null
+              : () {
+                  unawaited(_vaultKey.currentState?.synchronize(backup));
+                },
+          icon: backup.busy
+              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.sync_rounded, size: 15),
+          label: Text(t.desktopSync),
+        ),
+      );
+    },
   );
 
   Widget _footer() => Container(
     key: const Key('manager-footer'),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: const BoxDecoration(
+      color: AppColors.surface,
       border: Border(top: BorderSide(color: AppColors.border)),
     ),
     child: Row(
       children: [
         Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: widget.githubBackup == null
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: DefaultTextStyle(
-                      style: const TextStyle(color: AppColors.muted, fontSize: 11),
-                      child: _githubStatus(t.githubDisconnected),
-                    ),
-                  )
-                : ListenableBuilder(
-                    listenable: widget.githubBackup!,
-                    builder: (context, _) => Tooltip(
-                      message: githubStatusLabel(widget.githubBackup!),
-                      child: TextButton(
-                        style: _footerButtonStyle,
-                        onPressed: () => _vaultKey.currentState?.showGitHub(
-                          widget.githubBackup!,
-                        ),
-                        child: _githubStatus(
-                          githubStatusLabel(widget.githubBackup!),
-                        ),
-                      ),
+          child: widget.githubBackup == null
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: DefaultTextStyle(
+                    style: const TextStyle(fontFamily: 'Segoe UI', color: AppColors.muted, fontSize: 11),
+                    child: _githubStatus(t.githubDisconnected),
+                  ),
+                )
+              : ListenableBuilder(
+                  listenable: widget.githubBackup!,
+                  builder: (context, _) => DesktopTooltip(
+                    message: githubStatusLabel(widget.githubBackup!),
+                    child: TextButton(
+                      style: _footerButtonStyle,
+                      onPressed: () => _vaultKey.currentState?.showGitHub(widget.githubBackup!),
+                      child: _githubStatus(githubStatusLabel(widget.githubBackup!)),
                     ),
                   ),
-          ),
+                ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: ListenableBuilder(
-              listenable: widget.desktop,
-              builder: (context, _) => TextButton(
-                key: const Key('shortcut-settings'),
-                style: _footerButtonStyle,
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => ShortcutDialog(desktop: widget.desktop),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.tune_rounded, size: 14),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        t.keyboardShortcuts,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        const SizedBox(width: 4),
+        if (widget.githubBackup != null) _syncButton(),
+        const SizedBox(width: 4),
+        DesktopIconButton(
+          key: const Key('shortcut-settings'),
+          tooltip: t.keyboardShortcuts,
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => ShortcutDialog(desktop: widget.desktop),
           ),
+          icon: const Icon(Icons.keyboard_outlined, size: 17, color: AppColors.muted),
         ),
       ],
     ),

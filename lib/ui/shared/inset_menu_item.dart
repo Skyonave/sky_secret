@@ -17,7 +17,7 @@ class InsetMenuItem<T> extends PopupMenuEntry<T> {
   });
 
   @override
-  double get height => 48;
+  double get height => 32;
 
   @override
   bool represents(T? value) => value == this.value;
@@ -34,8 +34,9 @@ class _InsetMenuItemState<T> extends State<InsetMenuItem<T>> {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: TextButton(
         style: TextButton.styleFrom(
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          minimumSize: const Size(0, 28),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          animationDuration: Duration.zero,
           alignment: Alignment.centerLeft,
           foregroundColor: widget.destructive
               ? colors.error
@@ -43,14 +44,14 @@ class _InsetMenuItemState<T> extends State<InsetMenuItem<T>> {
               ? colors.primary
               : colors.onSurface,
           backgroundColor: widget.selected ? colors.primary.withValues(alpha: 0.08) : null,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
           textStyle: Theme.of(context).textTheme.bodyMedium,
         ),
         onPressed: () => Navigator.pop(context, widget.value),
         child: Row(
           children: [
-            Icon(widget.icon, size: 18),
-            const SizedBox(width: 12),
+            Icon(widget.icon, size: 16),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 widget.label,

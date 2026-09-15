@@ -7,7 +7,6 @@ class _VaultField extends StatelessWidget {
   final bool busy;
   final bool secret;
   final int lines;
-  final Widget? suffixIcon;
   final TextInputAction? textInputAction;
   final VoidCallback? onSubmit;
 
@@ -18,7 +17,6 @@ class _VaultField extends StatelessWidget {
     required this.busy,
     this.secret = false,
     this.lines = 1,
-    this.suffixIcon,
     this.textInputAction,
     this.onSubmit,
   });
@@ -48,10 +46,10 @@ class _VaultField extends StatelessWidget {
         maxLines: lines,
         decoration: InputDecoration(
           counterText: '',
-          suffixIcon: suffixIcon,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           labelText: label,
           isDense: true,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
         ),
       ),
     ),

@@ -27,6 +27,13 @@ class VaultEntryController {
 
   List<TextEditingController> get _controllers => [title, username, password, notes, totp, sshHost, sshPort];
 
+  bool applyGeneratedPassword(String value) {
+    if (active && isTotp) return false;
+    if (!active) start();
+    password.text = value;
+    return true;
+  }
+
   void start({
     VaultEntry? entry,
     String? parentId,
