@@ -11,6 +11,7 @@ import 'master_password_policy.dart';
 import 'password_normalization.dart';
 import 'protected_memory.dart';
 import 'ssh_endpoint.dart';
+import 'totp.dart';
 import 'vault_kdf_profile.dart';
 import 'vault_revision.dart';
 
@@ -254,7 +255,7 @@ _decodeContents(List<int> plain) {
   if (json is! Map<String, dynamic> ||
       json['entries'] is! List ||
       (json['entries'] as List).length >
-          ([4, 5, 6, 7, 8].contains(json['schemaVersion']) ? VaultCipher.maxItems : VaultCipher.maxEntries)) {
+          ([4, 5, 6, 7, 8, 9].contains(json['schemaVersion']) ? VaultCipher.maxItems : VaultCipher.maxEntries)) {
     throw const VaultFormatException();
   }
   final legacy = json.length == 1 && json.containsKey('entries');
@@ -262,7 +263,7 @@ _decodeContents(List<int> plain) {
   var rawEntries = 0;
   for (final value in json['entries'] as List) {
     if (value is! Map) throw const VaultFormatException();
-    if ([4, 5, 6, 7, 8].contains(json['schemaVersion']) && value['kind'] == 'file') {
+    if ([4, 5, 6, 7, 8, 9].contains(json['schemaVersion']) && value['kind'] == 'file') {
       rawFiles++;
     } else {
       rawEntries++;
@@ -274,11 +275,11 @@ _decodeContents(List<int> plain) {
       throw const VaultFormatException();
     }
   }
-  final organized = [6, 7, 8].contains(json['schemaVersion']);
+  final organized = [6, 7, 8, 9].contains(json['schemaVersion']);
   if (!legacy &&
-      (json.length != ([5, 6, 7, 8].contains(json['schemaVersion']) ? 5 : 4) ||
+      (json.length != ([5, 6, 7, 8, 9].contains(json['schemaVersion']) ? 5 : 4) ||
           json['schemaVersion'] is! int ||
-          ![2, 3, 4, 5, 6, 7, 8].contains(json['schemaVersion']) ||
+          ![2, 3, 4, 5, 6, 7, 8, 9].contains(json['schemaVersion']) ||
           !json.containsKey('name') ||
           !_validName(json['name']) ||
           json['folders'] is! List ||
@@ -309,11 +310,12 @@ _decodeContents(List<int> plain) {
         (value) => VaultEntry.fromJson(
           value,
           legacy: legacy,
-          files: json['schemaVersion'] == 3 || [4, 5, 6, 7, 8].contains(json['schemaVersion']),
-          typed: [4, 5, 6, 7, 8].contains(json['schemaVersion']),
+          files: json['schemaVersion'] == 3 || [4, 5, 6, 7, 8, 9].contains(json['schemaVersion']),
+          typed: [4, 5, 6, 7, 8, 9].contains(json['schemaVersion']),
           organized: organized,
-          sshAllowed: [7, 8].contains(json['schemaVersion']),
-          metadata: json['schemaVersion'] == 8,
+          sshAllowed: [7, 8, 9].contains(json['schemaVersion']),
+          metadata: [8, 9].contains(json['schemaVersion']),
+          totpAllowed: json['schemaVersion'] == 9,
         ),
       )
       .toList();
@@ -338,7 +340,7 @@ _decodeContents(List<int> plain) {
   final normalized = <VaultEntry>[];
   final entryIds = entries.map((e) => e.id).toSet();
   for (final entry in entries) {
-    if ([4, 5, 6, 7, 8].contains(json['schemaVersion']) || entry.attachments.isEmpty) {
+    if ([4, 5, 6, 7, 8, 9].contains(json['schemaVersion']) || entry.attachments.isEmpty) {
       normalized.add(entry);
       continue;
     }
@@ -379,7 +381,7 @@ _decodeContents(List<int> plain) {
     entries: normalized,
     folders: folders,
     name: legacy ? null : json['name'] as String?,
-    revision: [5, 6, 7, 8].contains(json['schemaVersion']) ? VaultRevision.fromJson(json['revision']) : null,
+    revision: [5, 6, 7, 8, 9].contains(json['schemaVersion']) ? VaultRevision.fromJson(json['revision']) : null,
   );
 }
 
@@ -412,6 +414,7 @@ Future<Uint8List> _seal(
         entry.username,
         entry.password,
         entry.notes,
+        entry.totp,
       ]) {
         codeUnits += field.length;
       }
@@ -425,7 +428,7 @@ Future<Uint8List> _seal(
     plain = Uint8List.fromList(
       utf8.encode(
         jsonEncode({
-          'schemaVersion': 8,
+          'schemaVersion': entries.any((entry) => entry.hasTotp) ? 9 : 8,
           'revision': revision.toJson(),
           'name': name,
           'folders': folders.map((folder) => folder.toJson()).toList(),

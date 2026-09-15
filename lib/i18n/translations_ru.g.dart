@@ -690,6 +690,31 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   String get searchStartTyping => 'Начните вводить название или логин';
 
   String get searchOpenFile => 'Открыть файл';
+
+  String get totpTitle => 'Коды подтверждения';
+
+  String get totpSecret => 'Ключ аутентификатора или ссылка otpauth://';
+
+  String get totpSetupHelp => 'Введите ключ настройки или ссылку otpauth://totp из настроек сайта. Ключ обязателен.';
+
+  String get totpWindowHelp => 'Нажмите на плашку, чтобы скопировать код.';
+
+  String get totpEmpty => 'Пока нет аутентификаторов. Добавьте запись «Аутентификатор» в сейфе.';
+
+  String get totpInvalid =>
+      'Неверный ключ или ссылка аутентификатора. Поддерживается TOTP: SHA1/SHA256/SHA512, 6 или 8 цифр, период 1–300 секунд.';
+
+  String get totpCopy => 'Скопировать текущий код';
+
+  String get totpSeconds => 'с';
+
+  String get totpClose => 'Закрыть коды';
+
+  String get totpOpenFailed => 'Не удалось открыть окно кодов подтверждения.';
+
+  String get totpAdd => 'Добавить аутентификатор';
+
+  String get totpKind => 'Аутентификатор · TOTP';
 }
 
 extension on Translations {
@@ -1023,6 +1048,18 @@ extension on Translations {
       'searchRefine' => 'Первые 50 совпадений. Уточните запрос.',
       'searchStartTyping' => 'Начните вводить название или логин',
       'searchOpenFile' => 'Открыть файл',
+      'totpTitle' => 'Коды подтверждения',
+      'totpSecret' => 'Ключ аутентификатора или ссылка otpauth://',
+      'totpSetupHelp' => 'Введите ключ настройки или ссылку otpauth://totp из настроек сайта. Ключ обязателен.',
+      'totpWindowHelp' => 'Нажмите на плашку, чтобы скопировать код.',
+      'totpEmpty' => 'Пока нет аутентификаторов. Добавьте запись «Аутентификатор» в сейфе.',
+      'totpInvalid' => 'Неверный ключ или ссылка аутентификатора. Поддерживается TOTP: SHA1/SHA256/SHA512, 6 или 8 цифр, период 1–300 секунд.',
+      'totpCopy' => 'Скопировать текущий код',
+      'totpSeconds' => 'с',
+      'totpClose' => 'Закрыть коды',
+      'totpOpenFailed' => 'Не удалось открыть окно кодов подтверждения.',
+      'totpAdd' => 'Добавить аутентификатор',
+      'totpKind' => 'Аутентификатор · TOTP',
       _ => null,
     };
   }

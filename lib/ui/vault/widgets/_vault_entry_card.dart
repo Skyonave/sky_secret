@@ -23,7 +23,9 @@ class _VaultEntryCard extends StatelessWidget {
     final title = entry.conflictOf == null
         ? entry.title
         : '${entry.title} · ${t.syncVariant(id: entry.id.substring(0, entry.id.length < 10 ? entry.id.length : 10))}';
-    final subtitle = entry.isFile
+    final subtitle = entry.isTotp
+        ? t.totpKind
+        : entry.isFile
         ? '${(entry.attachments.single.size / 1024).toStringAsFixed(1)} KiB'
         : entry.isSsh
         ? lifted
@@ -66,6 +68,8 @@ class _VaultEntryCard extends StatelessWidget {
                     child: Icon(
                       copied
                           ? Icons.check_rounded
+                          : entry.isTotp
+                          ? Icons.timer_outlined
                           : entry.isFile
                           ? Icons.insert_drive_file_outlined
                           : entry.isSsh

@@ -13,7 +13,9 @@ class _SearchSuggestion extends StatelessWidget {
     final kind = result['kind'];
     final location = result['location'] as String;
     final username = result['username'] as String;
-    final action = kind == 'file'
+    final action = kind == 'totp'
+        ? t.totpTitle
+        : kind == 'file'
         ? t.searchOpenFile
         : kind == 'ssh'
         ? t.sshConnect
@@ -33,7 +35,9 @@ class _SearchSuggestion extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  kind == 'file'
+                  kind == 'totp'
+                      ? Icons.timer_outlined
+                      : kind == 'file'
                       ? Icons.insert_drive_file_outlined
                       : kind == 'ssh'
                       ? Icons.terminal

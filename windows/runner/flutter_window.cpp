@@ -34,6 +34,43 @@ bool FlutterWindow::OnCreate() {
     RegisterPlugins(view_controller->engine());
   });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+  companion_ = std::make_unique<CompanionWindow>(GetHandle());
+  companion_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "skysecret/companion",
+      &flutter::StandardMethodCodec::GetInstance());
+  companion_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() == "bounds") {
+      const auto bounds = companion_->Bounds();
+      const double scale = GetDpiForWindow(GetHandle()) / 96.0;
+      if (!bounds || scale <= 0) {
+        result->Error("WINDOW_UNAVAILABLE", "Window bounds unavailable");
+        return;
+      }
+      result->Success(flutter::EncodableValue(flutter::EncodableMap{
+          {flutter::EncodableValue("x"), flutter::EncodableValue(bounds->left / scale)},
+          {flutter::EncodableValue("y"), flutter::EncodableValue(bounds->top / scale)},
+          {flutter::EncodableValue("width"), flutter::EncodableValue((bounds->right - bounds->left) / scale)},
+          {flutter::EncodableValue("height"), flutter::EncodableValue((bounds->bottom - bounds->top) / scale)},
+      }));
+    } else if (call.method_name() == "place") {
+      const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+      if (!args || args->count(flutter::EncodableValue("window")) == 0 ||
+          args->count(flutter::EncodableValue("gap")) == 0) {
+        result->Success(flutter::EncodableValue(false));
+        return;
+      }
+      const auto& id = args->at(flutter::EncodableValue("window"));
+      const auto* gap = std::get_if<double>(&args->at(flutter::EncodableValue("gap")));
+      const bool integer = std::holds_alternative<int32_t>(id) || std::holds_alternative<int64_t>(id);
+      result->Success(flutter::EncodableValue(integer && gap &&
+          companion_->Place(reinterpret_cast<HWND>(id.LongValue()), *gap)));
+    } else if (call.method_name() == "detach") {
+      companion_->Detach();
+      result->Success();
+    } else {
+      result->NotImplemented();
+    }
+  });
   file_drop_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "skysecret/file_drop",
       &flutter::StandardMethodCodec::GetInstance());
@@ -79,6 +116,9 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  if (companion_) companion_->Detach();
+  companion_channel_.reset();
+  companion_.reset();
   ssh_bridge_.reset();
   if (file_drop_) {
     file_drop_->Stop();
@@ -106,6 +146,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       lparam == 0) {
     return 0;
   }
+  if (companion_) companion_->OnMessage(message, wparam, lparam);
   if (message == WM_SHOWWINDOW && !wparam && file_drop_) {
 
     file_drop_->DragLeave();

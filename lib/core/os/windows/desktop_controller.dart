@@ -302,6 +302,7 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
     } else {
       await windowManager.focus();
     }
+    onAfterShow?.call();
   }
 
   @override
@@ -339,6 +340,11 @@ class DesktopController extends DesktopActions with WindowListener, TrayListener
       cancelDrag: _keyDown(0x02) || _keyDown(0x04) || _keyDown(0x1B),
       fileOver: _fileDragHover,
     );
+  }
+
+  @override
+  void onCompanionBlur() {
+    if (!_exiting && _ready.isCompleted) _blurDismissal.request();
   }
 
   @override

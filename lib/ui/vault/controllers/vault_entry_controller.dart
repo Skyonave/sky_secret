@@ -13,31 +13,40 @@ class VaultEntryController {
   final username = TextEditingController();
   final password = TextEditingController();
   final notes = TextEditingController();
+  final totp = TextEditingController();
   final sshHost = TextEditingController();
   final sshPort = TextEditingController(text: '22');
   final _generator = PasswordGenerator();
   bool active = false;
   bool isSsh = false;
+  bool isTotp = false;
   String? id;
   String? folderId;
   int generationLength = 24;
   bool generationSymbols = true;
 
-  List<TextEditingController> get _controllers => [title, username, password, notes, sshHost, sshPort];
+  List<TextEditingController> get _controllers => [title, username, password, notes, totp, sshHost, sshPort];
 
-  void start({VaultEntry? entry, String? parentId, bool ssh = false}) {
+  void start({
+    VaultEntry? entry,
+    String? parentId,
+    bool ssh = false,
+    bool authenticator = false,
+  }) {
     clear();
     if (entry?.isDeleted == true) return;
     id = entry?.id;
     isSsh = entry?.isSsh ?? ssh;
+    isTotp = entry?.isTotp ?? authenticator;
     folderId = entry?.folderId ?? parentId;
     title.text = entry?.title ?? '';
     username.text = entry?.username ?? '';
     notes.text = entry?.notes ?? '';
+    totp.text = isTotp ? entry?.totp ?? '' : '';
     sshHost.text = entry?.ssh?.host ?? '';
     sshPort.text = (entry?.ssh?.port ?? 22).toString();
     if (entry == null) {
-      if (isSsh == false) generate();
+      if (isSsh == false && isTotp == false) generate();
     } else {
       password.text = entry.password;
       if (password.text.isNotEmpty) generationLength = password.text.characters.length.clamp(12, 64);
@@ -52,6 +61,16 @@ class VaultEntryController {
   VaultOrganization prepare(VaultSession session) {
     if (active == false || session.isLocked) throw StateError('No active editor');
     if (title.text.trim().isEmpty) throw const EntryValidationException('title');
+    final previous = session.entries.where((entry) => entry.id == id).firstOrNull;
+    if (id != null && (previous == null || previous.isDeleted)) throw StateError('Edited entry is unavailable');
+    var authenticator = previous?.totp ?? '';
+    if (isTotp) {
+      try {
+        authenticator = TotpConfiguration.parse(totp.text).uri;
+      } on FormatException {
+        throw const EntryValidationException('totp-invalid');
+      }
+    }
     SshEndpoint? endpoint;
     if (isSsh) {
       endpoint = SshEndpoint(host: sshHost.text.trim().toLowerCase(), port: int.tryParse(sshPort.text) ?? 0);
@@ -60,25 +79,30 @@ class VaultEntryController {
       if (valid == false) throw const EntryValidationException('ssh-invalid');
     }
     final organization = VaultOrganization(entries: session.entries, folders: session.folders);
-    final previous = session.entries.where((entry) => entry.id == id).firstOrNull;
-    if (id != null && (previous == null || previous.isDeleted)) throw StateError('Edited entry is unavailable');
     final entry = previous == null
-        ? VaultEntry.create(
-            title: title.text,
-            username: username.text,
-            password: password.text,
-            notes: notes.text,
-            folderId: folderId,
-            ssh: endpoint,
-          )
+        ? isTotp
+              ? VaultEntry.authenticator(title: title.text, totp: authenticator, folderId: folderId)
+              : VaultEntry.create(
+                  title: title.text,
+                  username: username.text,
+                  password: password.text,
+                  notes: notes.text,
+                  folderId: folderId,
+                  ssh: endpoint,
+                )
         : VaultEntry(
             id: previous.id,
             title: title.text,
-            username: username.text,
-            password: password.text,
-            notes: notes.text,
+            username: isTotp ? '' : username.text,
+            password: isTotp ? '' : password.text,
+            notes: isTotp ? '' : notes.text,
+            totp: authenticator,
             folderId: folderId,
-            kind: isSsh ? VaultEntryKind.ssh : VaultEntryKind.text,
+            kind: isTotp
+                ? VaultEntryKind.totp
+                : isSsh
+                ? VaultEntryKind.ssh
+                : VaultEntryKind.text,
             ssh: endpoint,
             isFavorite: previous.isFavorite,
             conflictOf: previous.conflictOf,
@@ -100,6 +124,7 @@ class VaultEntryController {
     }
     active = false;
     isSsh = false;
+    isTotp = false;
     id = null;
     folderId = null;
   }

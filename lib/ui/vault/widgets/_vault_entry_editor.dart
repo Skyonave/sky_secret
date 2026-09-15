@@ -40,39 +40,48 @@ class _VaultEntryEditor extends StatelessWidget {
           child: Text(t.sshHelp, style: Theme.of(context).textTheme.bodySmall),
         ),
       ],
-      _field(draft.username, t.vaultUsername, 'entry-username'),
-      ValueListenableBuilder<TextEditingValue>(
-        valueListenable: draft.password,
-        builder: (context, value, _) => _field(
-          draft.password,
-          t.vaultPasswordLength(length: value.text.characters.length),
-          'entry-password',
-          secret: true,
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                key: const Key('entry-password-options'),
-                tooltip: t.vaultPasswordOptions,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 40,
+      if (draft.isTotp == false) ...[
+        _field(draft.username, t.vaultUsername, 'entry-username'),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: draft.password,
+          builder: (context, value, _) => _field(
+            draft.password,
+            t.vaultPasswordLength(length: value.text.characters.length),
+            'entry-password',
+            secret: true,
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const Key('entry-password-options'),
+                  tooltip: t.vaultPasswordOptions,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 40,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  onPressed: busy ? null : onPasswordOptions,
+                  icon: const Icon(Icons.tune_rounded, size: 19),
                 ),
-                padding: const EdgeInsets.all(8),
-                onPressed: busy ? null : onPasswordOptions,
-                icon: const Icon(Icons.tune_rounded, size: 19),
-              ),
-              IconButton(
-                key: const Key('generate-entry-password'),
-                tooltip: t.regenerate,
-                onPressed: busy ? null : onGenerate,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
+                IconButton(
+                  key: const Key('generate-entry-password'),
+                  tooltip: t.regenerate,
+                  onPressed: busy ? null : onGenerate,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      _field(draft.notes, t.vaultNotes, 'entry-notes', lines: 3),
+        _field(draft.notes, t.vaultNotes, 'entry-notes', lines: 3),
+      ],
+      if (draft.isTotp) ...[
+        _field(draft.totp, t.totpSecret, 'entry-totp', secret: true),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(t.totpSetupHelp, style: Theme.of(context).textTheme.bodySmall),
+        ),
+      ],
       Row(
         children: [
           TextButton(

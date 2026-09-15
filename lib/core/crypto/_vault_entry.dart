@@ -1,6 +1,6 @@
 part of 'vault_cipher.dart';
 
-enum VaultEntryKind { text, file, ssh }
+enum VaultEntryKind { text, file, ssh, totp }
 
 class VaultEntry {
   final String id;
@@ -10,6 +10,7 @@ class VaultEntry {
   final ProtectedText _username;
   final ProtectedText _password;
   final ProtectedText _notes;
+  final ProtectedText _totp;
   final String? folderId;
   final List<VaultAttachment> attachments;
   final VaultEntryKind kind;
@@ -23,6 +24,7 @@ class VaultEntry {
     required String username,
     required String password,
     required String notes,
+    String totp = '',
     this.folderId,
     List<VaultAttachment> attachments = const [],
     this.kind = VaultEntryKind.text,
@@ -34,7 +36,21 @@ class VaultEntry {
   }) : _username = ProtectedText(username),
        _password = ProtectedText(password),
        _notes = ProtectedText(notes),
-       attachments = List.unmodifiable(attachments);
+       _totp = ProtectedText(totp.isEmpty ? '' : TotpConfiguration.parse(totp).uri),
+       attachments = List.unmodifiable(attachments) {
+    if (kind == VaultEntryKind.totp) {
+      if (totp.isEmpty ||
+          username.isNotEmpty ||
+          password.isNotEmpty ||
+          notes.isNotEmpty ||
+          ssh != null ||
+          attachments.isNotEmpty) {
+        throw const VaultFormatException();
+      }
+    } else if (kind == VaultEntryKind.file && totp.isNotEmpty) {
+      throw const VaultFormatException();
+    }
+  }
 
   factory VaultEntry.create({
     required String title,
@@ -56,11 +72,32 @@ class VaultEntry {
     ssh: ssh,
   );
 
+  factory VaultEntry.authenticator({
+    required String title,
+    required String totp,
+    String? folderId,
+  }) => VaultEntry(
+    id: base64UrlEncode(_randomBytes(16)),
+    title: title,
+    username: '',
+    password: '',
+    notes: '',
+    totp: totp,
+    kind: VaultEntryKind.totp,
+    folderId: folderId,
+  );
+
   String get username => _username.read();
 
   String get password => _password.read();
 
   String get notes => _notes.read();
+
+  String get totp => _totp.read();
+
+  bool get hasTotp => _totp.isEmpty == false;
+
+  bool get isTotp => kind == VaultEntryKind.totp;
 
   bool get hasPassword => !_password.isEmpty;
 
@@ -91,6 +128,7 @@ class VaultEntry {
       _username = source._username,
       _password = source._password,
       _notes = source._notes,
+      _totp = source._totp,
       attachments = source.attachments,
       kind = source.kind,
       ssh = source.ssh,
@@ -110,6 +148,7 @@ class VaultEntry {
       _username = source._username,
       _password = source._password,
       _notes = source._notes,
+      _totp = source._totp,
       attachments = source.attachments,
       kind = source.kind,
       ssh = source.ssh,
@@ -125,6 +164,7 @@ class VaultEntry {
       _username = source._username.ownFor(lifetime),
       _password = source._password.ownFor(lifetime),
       _notes = source._notes.ownFor(lifetime),
+      _totp = source._totp.ownFor(lifetime),
       folderId = source.folderId,
       attachments = List.unmodifiable(
         source.attachments.map((a) => VaultAttachment._owned(a, lifetime)),
@@ -142,6 +182,7 @@ class VaultEntry {
       _username = source._username,
       _password = source._password,
       _notes = source._notes,
+      _totp = source._totp,
       folderId = source.folderId,
       attachments = source.attachments,
       kind = source.kind,
@@ -161,6 +202,7 @@ class VaultEntry {
       _username = source._username,
       _password = source._password,
       _notes = source._notes,
+      _totp = source._totp,
       folderId = source.folderId,
       attachments = source.attachments,
       kind = source.kind,
@@ -176,6 +218,7 @@ class VaultEntry {
     _username.destroy();
     _password.destroy();
     _notes.destroy();
+    _totp.destroy();
     for (final attachment in attachments) {
       attachment._bytes.destroy();
     }
@@ -187,6 +230,7 @@ class VaultEntry {
     _VaultEntryJson.username: username,
     _VaultEntryJson.password: password,
     _VaultEntryJson.notes: notes,
+    if (hasTotp) _VaultEntryJson.totp: totp,
     _VaultEntryJson.folderId: folderId,
     _VaultEntryJson.attachments: attachments.map((a) => a.toJson()).toList(),
     _VaultEntryJson.kind: kind.name,
@@ -205,7 +249,52 @@ class VaultEntry {
     bool organized = true,
     bool sshAllowed = true,
     bool metadata = true,
+    bool totpAllowed = true,
   }) {
+    if (value is Map<String, dynamic> && value.containsKey(_VaultEntryJson.totp)) {
+      final input = value[_VaultEntryJson.totp];
+      final kind = value[_VaultEntryJson.kind];
+      if (totpAllowed == false ||
+          legacy ||
+          !typed ||
+          input is! String ||
+          input.isEmpty ||
+          !['totp', 'text', 'ssh'].contains(kind)) {
+        throw const VaultFormatException();
+      }
+      final String normalized;
+      try {
+        normalized = TotpConfiguration.parse(input).uri;
+      } on FormatException {
+        throw const VaultFormatException();
+      }
+      final entry = fromJson(
+        {...value, _VaultEntryJson.kind: kind == 'totp' ? 'text' : kind}..remove(_VaultEntryJson.totp),
+        legacy: legacy,
+        files: files,
+        typed: typed,
+        organized: organized,
+        sshAllowed: sshAllowed,
+        metadata: metadata,
+        totpAllowed: false,
+      );
+      return VaultEntry(
+        id: entry.id,
+        title: entry.title,
+        username: entry.username,
+        password: entry.password,
+        notes: entry.notes,
+        totp: normalized,
+        folderId: entry.folderId,
+        attachments: entry.attachments,
+        kind: kind == 'totp' ? VaultEntryKind.totp : entry.kind,
+        ssh: entry.ssh,
+        conflictOf: entry.conflictOf,
+        order: entry.order,
+        isFavorite: entry.isFavorite,
+        deletedAt: entry.deletedAt,
+      );
+    }
     if (value is Map<String, dynamic> &&
         (value.containsKey(_VaultEntryJson.favorite) || value.containsKey(_VaultEntryJson.deletedAt))) {
       if (metadata == false) throw const VaultFormatException();
@@ -336,6 +425,7 @@ abstract final class _VaultEntryJson {
   static const username = 'username';
   static const password = 'password';
   static const notes = 'notes';
+  static const totp = 'totp';
   static const folderId = 'folderId';
   static const attachments = 'attachments';
   static const kind = 'kind';

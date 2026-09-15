@@ -5,6 +5,7 @@ import '../settings/shortcut_settings.dart';
 
 abstract class DesktopActions extends ChangeNotifier {
   VoidCallback? onBeforeHide;
+  VoidCallback? onAfterShow;
 
   String? get notice;
 
@@ -21,6 +22,8 @@ abstract class DesktopActions extends ChangeNotifier {
   void setFileDragHover(bool hovering) {}
 
   void setSshAuthenticationPending(bool pending) {}
+
+  void onCompanionBlur() {}
 
   Future<bool> focusFileDrop() async => true;
 }

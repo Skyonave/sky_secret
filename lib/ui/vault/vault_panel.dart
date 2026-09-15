@@ -9,6 +9,8 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../core/crypto/crypto.dart';
 import '../../core/desktop/windows/file_viewer_manager.dart';
+import '../../core/desktop/windows/totp_window_manager.dart';
+import '../../core/desktop/totp_session.dart';
 import '../../core/os/windows/ssh_connections.dart';
 import '../../core/settings/vault_preferences.dart';
 import '../../core/os/windows/window_privacy.dart';
@@ -50,6 +52,7 @@ class VaultPanel extends StatefulWidget {
   final Future<bool> Function(String) copySecret;
   final Future<void> Function() clearClipboard;
   final Future<void> Function()? onSearchDismissed;
+  final VoidCallback? onCodesBlur;
 
   const VaultPanel({
     super.key,
@@ -62,6 +65,7 @@ class VaultPanel extends StatefulWidget {
     required this.copySecret,
     required this.clearClipboard,
     this.onSearchDismissed,
+    this.onCodesBlur,
   });
 
   @override
@@ -96,6 +100,7 @@ class VaultPanelState extends State<VaultPanel> {
   final _confirmation = TextEditingController();
   late final SshConnections _sshConnections;
   final _viewers = FileViewerManager();
+  final _codesWindow = TotpWindowManager();
   static const _systemLock = MethodChannel('skysecret/system_lock');
   bool _sensitiveDialogOpen = false;
 
@@ -292,6 +297,7 @@ class VaultPanelState extends State<VaultPanel> {
             if (await _sync.restore(backup, bytes, passwords.password, remote: remote) == false || !mounted) return;
             _resetBrowser();
             _viewers.closeAll();
+            _codesWindow.close();
             unawaited(widget.clearClipboard());
             setState(() {
               _master.clear();
@@ -378,10 +384,17 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   void onWindowHidden() {
+    _codesWindow.close();
     _searchWindow.close();
     if (!mounted || !_lockWhenHidden) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
     _lock();
+  }
+
+  void onWindowShown() {
+    if (_session?.entries.any((entry) => entry.hasTotp && entry.isDeleted == false) == true) {
+      unawaited(_openCodes());
+    }
   }
 
   @override
@@ -405,6 +418,7 @@ class VaultPanelState extends State<VaultPanel> {
       }
     });
     unawaited(_checkSystemLock());
+    unawaited(_codesWindow.prepare(LocaleSettings.currentLocale.languageCode).catchError((_) {}));
     unawaited(_load());
   }
 
@@ -412,6 +426,8 @@ class VaultPanelState extends State<VaultPanel> {
   void didUpdateWidget(VaultPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.active == false) _searchWindow.close();
+    if (widget.active == false) _codesWindow.close();
+    if (widget.active && oldWidget.active == false) onWindowShown();
   }
 
   Future<void> _checkSystemLock() async {
@@ -496,6 +512,7 @@ class VaultPanelState extends State<VaultPanel> {
       if (await _lifecycle.importFile(File(source.path), passwords.password) == false || !mounted) return;
       _resetBrowser();
       _viewers.closeAll();
+      _codesWindow.close();
       unawaited(widget.clearClipboard());
       setState(() {
         _master.clear();
@@ -539,6 +556,7 @@ class VaultPanelState extends State<VaultPanel> {
       if (await _lifecycle.changePassword(passwords.current, passwords.password) == false || !mounted) return;
       setState(() {});
       _viewers.closeAll();
+      _codesWindow.close();
       unawaited(widget.clearClipboard());
 
       _touchActivity();
@@ -756,6 +774,7 @@ class VaultPanelState extends State<VaultPanel> {
       _touchActivity();
       if (_store!.snapshotCleanupPending) _notice(t.vaultSnapshotCleanupWarning);
     });
+    if (_session?.entries.any((entry) => entry.hasTotp && entry.isDeleted == false) == true) unawaited(_openCodes());
   }
 
   bool _onKeyActivity(KeyEvent event) {
@@ -779,6 +798,8 @@ class VaultPanelState extends State<VaultPanel> {
   Future<void> _startSearch() async {
     final session = _session;
     if (session == null || session.isLocked || _busy || _editor.active || _renamingVault || _searching) return;
+    final reopenCodes = _codesWindow.isOpen;
+    _codesWindow.close();
     bool valid() => mounted && widget.active && _session == session && session.isLocked == false;
     _searching = true;
     try {
@@ -799,6 +820,8 @@ class VaultPanelState extends State<VaultPanel> {
         await _openFile(entry);
       } else if (entry.isSsh) {
         await _connectSsh(entry);
+      } else if (entry.isTotp) {
+        await _openCodes();
       } else if (entry.hasPassword) {
         await _copyEntry(entry);
       } else {
@@ -810,6 +833,7 @@ class VaultPanelState extends State<VaultPanel> {
       if (valid()) _notice(t.searchUnavailable);
     } finally {
       _searching = false;
+      if (reopenCodes && valid()) unawaited(_openCodes());
     }
   }
 
@@ -1255,9 +1279,10 @@ class VaultPanelState extends State<VaultPanel> {
     VaultEntry? entry,
     String? folderId,
     bool ssh = false,
+    bool authenticator = false,
   ]) => setState(() {
     _error = null;
-    _editor.start(entry: entry, parentId: folderId, ssh: ssh);
+    _editor.start(entry: entry, parentId: folderId, ssh: ssh, authenticator: authenticator);
   });
 
   Future<void> _passwordOptions() async {
@@ -1297,6 +1322,7 @@ class VaultPanelState extends State<VaultPanel> {
           _collapsedFolders.remove(folderId ?? '');
           _clearEditor();
         });
+        if (session.entries.any((entry) => entry.hasTotp && entry.isDeleted == false)) unawaited(_openCodes());
       }
     } on EntryValidationException catch (error) {
       if (mounted) setState(() => _error = error.code);
@@ -1567,6 +1593,7 @@ class VaultPanelState extends State<VaultPanel> {
       _sensitiveDialogOpen = false;
     }
     _viewers.closeAll();
+    _codesWindow.close();
     _lifecycle.lock();
     _master.clear();
     _confirmation.clear();
@@ -1596,6 +1623,7 @@ class VaultPanelState extends State<VaultPanel> {
     _copyNoticeTimer?.cancel();
     _copyNotice = null;
     _viewers.closeAll();
+    _codesWindow.dispose();
     _lifecycle.lock();
     _systemLock.setMethodCallHandler(null);
     _idleTimer?.cancel();
@@ -1617,6 +1645,7 @@ class VaultPanelState extends State<VaultPanel> {
   }
 
   String get _errorText => switch (_error) {
+    'totp-invalid' => t.totpInvalid,
     'ssh-invalid' => t.sshInvalid,
     'required' => t.vaultPasswordRequired,
     'mismatch' => t.vaultPasswordMismatch,
@@ -1643,6 +1672,7 @@ class VaultPanelState extends State<VaultPanel> {
     addEntry: (parentId) => _edit(null, parentId),
     addFile: _addFile,
     addSsh: (parentId) => _edit(null, parentId, true),
+    addTotp: (parentId) => _edit(null, parentId, false, true),
     createTextFile: _createTextFile,
     move: _moveItem,
   );
@@ -1660,6 +1690,26 @@ class VaultPanelState extends State<VaultPanel> {
     }
   }
 
+  Future<void> _openCodes() async {
+    final session = _session;
+    if (!mounted || _busy || session == null || session.isLocked || widget.active == false) return;
+    try {
+      await _codesWindow.open(
+        session: TotpSession(
+          vault: session,
+          isValid: () => mounted && widget.active && _session == session,
+          copy: widget.copySecret,
+          clearClipboard: widget.clearClipboard,
+          activity: _touchActivity,
+        ),
+        locale: LocaleSettings.currentLocale.languageCode,
+        onBlur: () => widget.onCodesBlur?.call(),
+      );
+    } catch (_) {
+      if (mounted) _notice(t.totpOpenFailed);
+    }
+  }
+
   Widget _entryCard(VaultEntry entry) {
     final card = _VaultEntryCard(
       entry: entry,
@@ -1667,6 +1717,8 @@ class VaultPanelState extends State<VaultPanel> {
       key: ValueKey('entry-card-${entry.id}'),
       onTap: _busy || entry.isDeleted
           ? null
+          : entry.isTotp
+          ? _openCodes
           : entry.isFile
           ? () => _openFile(entry)
           : entry.isSsh
@@ -1735,6 +1787,8 @@ class VaultPanelState extends State<VaultPanel> {
     return Tooltip(
       message: entry.isDeleted
           ? t.browserTrashHelp
+          : entry.isTotp
+          ? t.totpTitle
           : entry.isFile
           ? t.vaultFileHint
           : entry.isSsh
@@ -1833,6 +1887,7 @@ class VaultPanelState extends State<VaultPanel> {
                   busy: _busy,
                   onEntry: () => _edit(),
                   onSsh: () => _edit(null, null, true),
+                  onTotp: () => _edit(null, null, false, true),
                   onFile: _addFile,
                   onTextFile: _createTextFile,
                 ),

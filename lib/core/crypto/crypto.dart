@@ -11,3 +11,4 @@ export 'vault_revision.dart';
 export 'vault_organization.dart';
 export 'vault_collection.dart';
 export 'ssh_endpoint.dart';
+export 'totp.dart';

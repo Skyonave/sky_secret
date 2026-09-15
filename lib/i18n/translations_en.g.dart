@@ -694,6 +694,32 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
   String get searchStartTyping => 'Type to find a vault entry';
   @override
   String get searchOpenFile => 'Open file';
+  @override
+  String get totpTitle => 'Verification codes';
+  @override
+  String get totpSecret => 'Authenticator key or otpauth:// link';
+  @override
+  String get totpSetupHelp =>
+      'Enter the setup key or otpauth://totp link from the website settings. A key is required.';
+  @override
+  String get totpWindowHelp => 'Click a tile to copy its code.';
+  @override
+  String get totpEmpty => 'No authenticators yet. Add an Authenticator entry to the vault.';
+  @override
+  String get totpInvalid =>
+      'Invalid authenticator key or link. Use TOTP with SHA1/SHA256/SHA512, 6 or 8 digits, and a period of 1–300 seconds.';
+  @override
+  String get totpCopy => 'Copy current code';
+  @override
+  String get totpSeconds => 's';
+  @override
+  String get totpClose => 'Close codes';
+  @override
+  String get totpOpenFailed => 'Could not open the verification codes window.';
+  @override
+  String get totpAdd => 'Add authenticator';
+  @override
+  String get totpKind => 'Authenticator · TOTP';
 }
 
 extension on TranslationsEn {
@@ -1025,6 +1051,18 @@ extension on TranslationsEn {
       'searchRefine' => 'Showing the first 50 matches. Refine your search.',
       'searchStartTyping' => 'Type to find a vault entry',
       'searchOpenFile' => 'Open file',
+      'totpTitle' => 'Verification codes',
+      'totpSecret' => 'Authenticator key or otpauth:// link',
+      'totpSetupHelp' => 'Enter the setup key or otpauth://totp link from the website settings. A key is required.',
+      'totpWindowHelp' => 'Click a tile to copy its code.',
+      'totpEmpty' => 'No authenticators yet. Add an Authenticator entry to the vault.',
+      'totpInvalid' => 'Invalid authenticator key or link. Use TOTP with SHA1/SHA256/SHA512, 6 or 8 digits, and a period of 1–300 seconds.',
+      'totpCopy' => 'Copy current code',
+      'totpSeconds' => 's',
+      'totpClose' => 'Close codes',
+      'totpOpenFailed' => 'Could not open the verification codes window.',
+      'totpAdd' => 'Add authenticator',
+      'totpKind' => 'Authenticator · TOTP',
       _ => null,
     };
   }

@@ -3,6 +3,7 @@ project(runner LANGUAGES CXX)
 
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
+  "companion_window.cpp"
   "file_drop_target.cpp"
   "main.cpp"
   "ssh_bridge.cpp"
@@ -31,3 +32,7 @@ target_link_libraries(${BINARY_NAME} PRIVATE "ole32.lib" "shell32.lib" "uuid.lib
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+add_executable(companion_window_test EXCLUDE_FROM_ALL "../../test/windows/companion_window_test.cpp")
+apply_standard_settings(companion_window_test)
+target_compile_definitions(companion_window_test PRIVATE NOMINMAX)

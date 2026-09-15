@@ -62,12 +62,14 @@ class _ManagerWindowState extends State<ManagerWindow> {
   late final SensitiveClipboard _clipboard = widget.clipboard ?? WindowsSensitiveClipboard();
 
   void _beforeHide() => _vaultKey.currentState?.onWindowHidden();
+  void _afterShow() => _vaultKey.currentState?.onWindowShown();
 
   @override
   void initState() {
     super.initState();
     widget.clipboardBoundary?.attach(_copySecret);
     widget.desktop.onBeforeHide = _beforeHide;
+    widget.desktop.onAfterShow = _afterShow;
   }
 
   @override
@@ -79,7 +81,9 @@ class _ManagerWindowState extends State<ManagerWindow> {
     }
     if (oldWidget.desktop != widget.desktop) {
       oldWidget.desktop.onBeforeHide = null;
+      oldWidget.desktop.onAfterShow = null;
       widget.desktop.onBeforeHide = _beforeHide;
+      widget.desktop.onAfterShow = _afterShow;
     }
   }
 
@@ -237,6 +241,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
   void dispose() {
     widget.clipboardBoundary?.detach(_copySecret);
     widget.desktop.onBeforeHide = null;
+    widget.desktop.onAfterShow = null;
     widget.desktop.setFileDragHover(false);
     _clipboardGeneration++;
     _clipboardTimer?.cancel();
@@ -277,6 +282,7 @@ class _ManagerWindowState extends State<ManagerWindow> {
                               Offstage(
                                 offstage: _page != 0,
                                 child: VaultPanel(
+                                  onCodesBlur: widget.desktop.onCompanionBlur,
                                   active: _page == 0,
                                   key: _vaultKey,
                                   store: widget.vaultStore,

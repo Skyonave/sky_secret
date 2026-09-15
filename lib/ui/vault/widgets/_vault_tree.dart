@@ -27,6 +27,7 @@ class _VaultTree extends StatefulWidget {
   final void Function(String?) addEntry;
   final void Function(String?) addFile;
   final void Function(String?) addSsh;
+  final void Function(String?) addTotp;
   final void Function(String?) createTextFile;
   final Future<void> Function(VaultItem, String?, String?) move;
 
@@ -42,6 +43,7 @@ class _VaultTree extends StatefulWidget {
     required this.addEntry,
     required this.addFile,
     required this.addSsh,
+    required this.addTotp,
     required this.createTextFile,
     required this.move,
   });
@@ -326,6 +328,7 @@ class _VaultTreeState extends State<_VaultTree> {
   List<PopupMenuEntry<String>> _menu(VaultFolder? folder) => [
     InsetMenuItem(value: 'entry', label: t.vaultAddEntry, icon: Icons.add_rounded),
     InsetMenuItem(value: 'ssh', label: t.sshAdd, icon: Icons.terminal_rounded),
+    InsetMenuItem(value: 'totp', label: t.totpAdd, icon: Icons.timer_outlined),
     InsetMenuItem(value: 'file', label: t.vaultAddFile, icon: Icons.upload_file_outlined),
     InsetMenuItem(value: 'text', label: t.vaultCreateTextFile, icon: Icons.note_add_outlined),
     if (folder == null || folder.isSection)
@@ -355,6 +358,8 @@ class _VaultTreeState extends State<_VaultTree> {
         widget.addEntry(folder?.id);
       case 'ssh':
         widget.addSsh(folder?.id);
+      case 'totp':
+        widget.addTotp(folder?.id);
       case 'file':
         widget.addFile(folder?.id);
       case 'text':

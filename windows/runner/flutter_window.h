@@ -11,6 +11,7 @@
 #include "win32_window.h"
 #include "file_drop_target.h"
 #include "ssh_bridge.h"
+#include "companion_window.h"
 
 
 class FlutterWindow : public Win32Window {
@@ -34,6 +35,8 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> security_channel_;
   std::unique_ptr<SshBridge> ssh_bridge_;
+  std::unique_ptr<CompanionWindow> companion_;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> companion_channel_;
   bool session_notifications_ = false;
   FileDropTarget* file_drop_ = nullptr;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> file_drop_channel_;

@@ -25,7 +25,9 @@ class VaultBrowserController {
         'title': entry.title,
         'username': entry.username,
         'location': result.location.join(' / '),
-        'kind': entry.isFile
+        'kind': entry.isTotp
+            ? 'totp'
+            : entry.isFile
             ? 'file'
             : entry.isSsh
             ? 'ssh'

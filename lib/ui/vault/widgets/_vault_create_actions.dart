@@ -4,6 +4,7 @@ class _VaultCreateActions extends StatelessWidget {
   final bool busy;
   final VoidCallback onEntry;
   final VoidCallback onSsh;
+  final VoidCallback onTotp;
   final VoidCallback onFile;
   final VoidCallback onTextFile;
 
@@ -11,6 +12,7 @@ class _VaultCreateActions extends StatelessWidget {
     required this.busy,
     required this.onEntry,
     required this.onSsh,
+    required this.onTotp,
     required this.onFile,
     required this.onTextFile,
   });
@@ -31,6 +33,14 @@ class _VaultCreateActions extends StatelessWidget {
           onPressed: busy ? null : onEntry,
           icon: const Icon(Icons.add_rounded),
           label: Text(t.vaultAddEntry),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('add-totp'),
+          onPressed: busy ? null : onTotp,
+          style: outlinedStyle,
+          icon: const Icon(Icons.timer_outlined, size: 20),
+          label: Text(t.totpAdd),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(

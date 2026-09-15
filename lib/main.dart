@@ -10,6 +10,7 @@ import 'core/os/windows/windows_instance.dart';
 import 'core/sync/github/github_backup.dart';
 import 'i18n/translations.g.dart';
 import 'ui/editor/file_editor_window.dart';
+import 'ui/authenticator/totp_window.dart';
 
 Future<void> main(List<String> args) async {
   final clipboardBoundary = SensitiveClipboardBoundary();
@@ -24,6 +25,7 @@ Future<void> main(List<String> args) async {
     return;
   }
   if (await runFileEditorIfNeeded(clipboardBoundary: clipboardBoundary)) return;
+  if (await runTotpWindowIfNeeded()) return;
   final WindowsInstance instance;
   try {
     instance = WindowsInstance();

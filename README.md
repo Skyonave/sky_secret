@@ -16,12 +16,17 @@ A portable password and file manager for Windows. Works offline, lives in the sy
 - Saved SSH connections through CMD and Windows OpenSSH.
 - Encrypted `.smv` import/export, optional GitHub backups and manual sync, conflict review, history and recovery.
 - Russian and English interface; configurable visibility in screen recordings.
+- Verification codes (TOTP): choose **Add authenticator**, enter a name and paste the setup key or `otpauth://` link. Codes appear as separate tiles beside the manager, aligned at the bottom and growing upward. Click a tile to copy; use the wheel or arrows for more codes. Click an authenticator entry to open the tiles again; Esc hides them. Codes work offline; keep the computer clock accurate. Delete the authenticator entry to remove it. QR import is not supported.
 
 Run **SkySecret-<version>-windows-x64.exe**, open the manager from the tray and create a vault. **There is no master-password reset.** GitHub is optional; its connection dialog guides repository and token setup. Save edits before hiding the manager: hiding locks it by default.
 
 > We work to protect your data, but cannot guarantee its security or recovery. Keep verified independent backups.
 
 Before saving a shared vault in **0.3.1**, update every device to **0.3.1 or later**. Older versions cannot open the updated vault. Keep a verified independent backup before upgrading.
+
+Previously created vaults remain readable, including TOTP stored with a password or SSH entry. These existing records keep their fields when saved. New authenticators use a separate entry type.
+
+Adding TOTP requires this authenticator-capable build on every device: the original **0.3.1** release cannot open vaults containing TOTP. Authenticator keys are encrypted with the vault and included in its exports and backups. Keeping passwords and authenticator keys together means access to the unlocked vault exposes both.
 
 ## Русский
 
@@ -34,11 +39,16 @@ Before saving a shared vault in **0.3.1**, update every device to **0.3.1 or lat
 - Сохранённые SSH-подключения через CMD и Windows OpenSSH.
 - Импорт и экспорт зашифрованных `.smv`, необязательные копии в GitHub и ручная синхронизация, разбор конфликтов, история и восстановление.
 - Русский и английский интерфейс, настройка видимости при записи экрана.
+- Коды подтверждения (TOTP): выберите **«Добавить аутентификатор»**, укажите название и ключ настройки или ссылку `otpauth://`. Коды появляются отдельными плашками рядом с менеджером, от нижнего края вверх. Нажатие копирует код; колесо и стрелки листают остальные записи. Нажатие на запись аутентификатора снова открывает плашки, Esc скрывает их. Интернет не нужен; часы компьютера должны быть точными. Для удаления используйте корзину записи аутентификатора. Импорт QR не поддерживается.
 
 Запустите **SkySecret-<версия>-windows-x64.exe**, откройте менеджер из трея и создайте сейф. **Сброса мастер-пароля нет.** GitHub подключается по желанию; настройка репозитория и токена объясняется в диалоге подключения. Сохраняйте правки перед скрытием: по умолчанию оно блокирует сейф.
 
 > Мы максимально стараемся обезопасить данные, но не можем гарантировать их безопасность и восстановление. Храните проверенные независимые резервные копии.
 
 Перед сохранением общего сейфа в **0.3.1** обновите все устройства до **0.3.1 или новее**. Старые версии не откроют обновлённый сейф. До обновления сохраните проверенную независимую резервную копию.
+
+Ранее созданные сейфы открываются, включая TOTP внутри записи пароля или SSH. При сохранении такие записи сохраняют свои поля. Новые аутентификаторы создаются отдельным типом.
+
+Для TOTP установите эту сборку с поддержкой кодов на все устройства: исходный релиз **0.3.1** не откроет сейф с TOTP. Ключи аутентификатора зашифрованы вместе с сейфом и входят в его экспорт и резервные копии. При совместном хранении паролей и ключей доступ к открытому сейфу раскрывает оба.
 
 [Security / Безопасность](SECURITY.md) · [License](LICENSE)
