@@ -1,6 +1,7 @@
-name: Tag checks, build and draft release
+name: Build, antivirus checks and optional draft
 
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 
@@ -25,6 +26,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate version tag
+        if: github.event_name == 'push'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
@@ -63,16 +65,52 @@ jobs:
         run: |
           ./test/release_metadata_test.ps1
           ./test/release_download_test.ps1
+          ./test/release_antivirus_test.ps1
           ./test/run-unit-tests.ps1
       - name: Build Windows x64
         run: flutter build windows --release --no-pub --no-tree-shake-icons
       - name: Native window focus unit tests
         run: ./test/run-native-unit-tests.ps1
       - name: Package EXE and verification archive
+        id: package
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-        run: ./windows/create-release-bundle.ps1 -Tag $env:RELEASE_TAG
+          BUILD_EVENT: ${{ github.event_name }}
+        run: |
+          if ($env:BUILD_EVENT -eq 'push') {
+            ./windows/create-release-bundle.ps1 -Tag $env:RELEASE_TAG
+          } else {
+            ./windows/create-release-bundle.ps1
+          }
+      - name: Scan unpacked input and final EXE
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        timeout-minutes: 15
+        run: |
+          $unpacked = @(Get-ChildItem build -Directory -Filter 'release-input-*')
+          $packed = @(Get-ChildItem build/release-bundle -File -Filter '*.exe')
+          if ($unpacked.Count -ne 1 -or $packed.Count -ne 1) { throw 'Expected one unpacked input and one final EXE' }
+          ./windows/release-antivirus.ps1 -Paths @($unpacked[0].FullName, $packed[0].FullName) -UpdateSignatures
+      - name: Preserve antivirus reports
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: antivirus-reports-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/antivirus/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve diagnostic samples without publishing a release
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && (steps.package.outcome == 'success' || steps.package.outcome == 'failure') }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: diagnostic-samples-not-for-release-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            build/release-input-*/**
+            build/release-bundle/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
       - name: Upload the two release files
+        if: github.event_name == 'push'
         id: upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -83,6 +121,7 @@ jobs:
           retention-days: 14
 
   attest:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: windows-2025
     timeout-minutes: 10
@@ -128,6 +167,7 @@ jobs:
           retention-days: 14
 
   draft:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: attest
     runs-on: windows-2025
     timeout-minutes: 10
