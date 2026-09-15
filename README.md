@@ -1,4 +1,5 @@
 # SkySecret
+SkySecret (Sky Secret)
 
 **A private workflow for secrets, files and SSH on Windows.**
 
